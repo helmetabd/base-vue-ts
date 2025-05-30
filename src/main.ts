@@ -11,8 +11,7 @@ import VueFeather from 'vue-feather' //feather icon
 // import Maska from 'maska' //for client validation input type that forbiden user from input different format
 import Multiselect from '@vueform/multiselect'
 
-import './assets/main.css'
-import './assets/scss/config/default/app.scss'
+import './assets/scss/config/minimal/app.scss'
 import 'bootstrap/dist/js/bootstrap.bundle'
 import 'remixicon/fonts/remixicon.css'
 import 'aos/dist/aos.css'

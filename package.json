@@ -13,6 +13,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@ckeditor/ckeditor5-vue": "^7.3.0",
     "@popperjs/core": "^2.11.8",
     "@redtea/format-axios-error": "^2.1.1",
     "@tsparticles/slim": "^3.8.1",
@@ -29,6 +30,7 @@
     "autoprefixer": "^10.4.21",
     "axios": "^1.9.0",
     "bootstrap": "^5.3.6",
+    "ckeditor5": "^45.1.0",
     "feather-icons": "^4.29.2",
     "jsbarcode": "^3.11.6",
     "lottie-web": "^5.13.0",

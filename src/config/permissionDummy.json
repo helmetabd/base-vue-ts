@@ -1,0 +1,21 @@
+[
+  { "module": "department", "create": 0, "read": 1, "update": 0 },
+  { "module": "recruitment", "create": 0, "read": 1, "update": 0 },
+  { "module": "employee", "create": 0, "read": 1, "update": 0 },
+  { "module": "user", "create": 0, "read": 1, "update": 0 },
+  { "module": "department.departments", "create": 1, "read": 1, "update": 1 },
+  { "module": "department.map", "create": 0, "read": 1, "update": 0 },
+  { "module": "department.positions", "create": 0, "read": 1, "update": 1 },
+  { "module": "department.groups", "create": 1, "read": 1, "update": 1 },
+  { "module": "department.offices", "create": 0, "read": 1, "update": 0 },
+  { "module": "employee.employees", "create": 1, "read": 1, "update": 1 },
+  { "module": "employee.contracts", "create": 1, "read": 1, "update": 0 },
+  { "module": "employee.promotions", "create": 1, "read": 1, "update": 0 },
+  { "module": "employee.resigns", "create": 1, "read": 1, "update": 0 },
+  { "module": "recruitment.interviews", "create": 1, "read": 1, "update": 1 },
+  { "module": "recruitment.candidates", "create": 1, "read": 1, "update": 1 },
+  { "module": "recruitment.open_positions", "create": 1, "read": 1, "update": 1 },
+  { "module": "user.users", "create": 1, "read": 1, "update": 1 },
+  { "module": "user.logs", "create": 0, "read": 1, "update": 0 },
+  { "module": "user.morph", "create": 0, "read": 1, "update": 0 }
+]
