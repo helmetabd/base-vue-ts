@@ -46,7 +46,7 @@ onMounted(() => {
         <div class="col-lg-12">
             <div class="card">
                 <div class="card-body table-responsive">
-                    <div>Welcome to <strong>YUDHISTIRA</strong> by PANDAWA ERP.</div>
+                    <div>Welcome to <strong>Base VUE TS</strong> by helmetabd.</div>
                 </div>
             </div>
         </div>

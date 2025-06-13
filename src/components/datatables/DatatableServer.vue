@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import _debounce from 'lodash/debounce'
 import { getAvatar } from '../../utils/assetsHelper'
-import { reactive, ref, watch } from 'vue'
+import { nextTick, reactive, ref, watch } from 'vue'
 import { utilsService } from '../../service'
 import { thousandSeparator } from '@/utils/dashboardHelper'
 import { calculateGrowth } from '../../utils/calculationHelper'
@@ -12,16 +12,17 @@ import StackedAvatar from '../utils/StackedAvatar.vue'
 import type { links, PaginationType } from '@/interfaces/Utils'
 import { useRouter } from 'vue-router'
 import { slideToggle } from '@/utils/slider'
+import { watchOnce } from '@vueuse/core'
 
 const emit = defineEmits(['toggle', 'toggleExport', 'changeURL', 'getValue'])
 const inputId = 'autofocus-input';
 const router = useRouter()
 
 interface Param {
-    perpage?: number
-    sort?: string
-    order_by?: string
-    search?: string
+    limit?: number
+    'sort-method'?: string
+    'sort-by'?: string
+    'search-query'?: string
     page?: number
 }
 interface Column {
@@ -93,38 +94,65 @@ const state = reactive({
     columns: props.column as Column[],
     perPage: ['10', '25', '50', '100'],
     arrows: {
-        arr: props.params?.sort ?? 'asc',
-        col: props.params?.order_by ?? 'id'
+        arr: props.params?.['sort-method'] ?? 'asc',
+        col: props.params?.['sort-by'] ?? 'id'
     },
     loadingState: false,
     tableData: {
-        perpage: props.params?.perpage ?? 10,
-        sort: props.params?.sort ?? 'asc',
-        order_by: props.params?.order_by ?? 'id',
+        limit: props.params?.limit ?? 10,
+        'sort-method': props.params?.['sort-method'] ?? 'asc',
+        'sort-by': props.params?.['sort-by'] ?? 'id',
+        // Add this line to include all params from parent
+        ...(props.params || {})
     } as Param,
     page: null as number | null,
     pagination: {} as PaginationType
 })
 const avatar = (avatar: string | null | undefined) => getAvatar(avatar)
 const getProjects = (url = state.tableUrl) => {
+    if (isFetching.value) return
     let par = { ...state.tableData }
+    
     if (state.tableParam && Object.keys(state.tableParam).length) {
         par = { ...state.tableParam, ...state.tableData }
     }
+    
     if (state.page) {
         par.page = state.page
     }
+    
+    // Clean up empty search query before making request
+    if (par['search-query'] === '' || par['search-query'] === null || par['search-query'] === undefined) {
+        delete par['search-query']
+    }
+    
     const paramData = Object.fromEntries(
-        Object.entries(par).filter(([key, value]) => value !== null)
+        Object.entries(par).filter(([key, value]) => 
+            value !== null && 
+            value !== '' && 
+            value !== undefined
+        )
     )
     const paramExport = Object.fromEntries(
-        Object.entries(par).filter(([key, value]) => value !== null && key !== 'page' && key !== 'order_by' && key !== 'sort' && key !== 'per_page')
+        Object.entries(par).filter(([key, value]) => 
+            value !== null && 
+            value !== '' && 
+            value !== undefined && 
+            key !== 'page' && 
+            key !== 'sort-by' && 
+            key !== 'sort-method' && 
+            key !== 'limit'
+        )
     )
+    
     state.projects = []
     changeRoute(par)
     state.loadingState = true
+    isFetching.value = true
+
     emit('changeURL', paramExport)
     emit('toggle', false)
+
     utilsService
         .fetchIndex(url, paramData)
         .then((res) => {
@@ -143,6 +171,7 @@ const getProjects = (url = state.tableUrl) => {
         .finally(() => {
             state.page = null
             state.loadingState = false
+            isFetching.value = false
             emit('toggle', true)
         })
 }
@@ -179,14 +208,67 @@ function shouldHideDate(item: { [x: string]: any }, column: Column): boolean {
 }
 const searching = _debounce(async (e: Event) => {
     const target = e.target as HTMLInputElement;
-    state.tableData.search = target.value
+    const value = target.value.trim()
+    
+    if (value === '') {
+        // If manually cleared, treat it like clearSearch
+        state.tableData['search-query'] = ''
+        delete state.tableData['search-query']
+        
+        if (state.tableParam && state.tableParam['search-query']) {
+            delete state.tableParam['search-query']
+        }
+        
+        // Update route to remove search-query
+        const currentParams = { ...state.tableData }
+        delete currentParams['search-query']
+        changeRoute(currentParams)
+    } else {
+        state.tableData['search-query'] = value
+    }
+    
     getProjects()
 }, 1000)
+
+const clearSearch = () => {
+    // Clear from tableData
+    state.tableData['search-query'] = ''
+    delete state.tableData['search-query']
+    
+    // Clear from tableParam as well
+    if (state.tableParam && state.tableParam['search-query']) {
+        delete state.tableParam['search-query']
+    }
+    
+    // Clear the input field
+    const searchInput = document.getElementById(inputId) as HTMLInputElement
+    if (searchInput) {
+        searchInput.value = ''
+    }
+    
+    // Force update the route to remove search-query from URL completely
+    const currentParams = { ...state.tableData }
+    delete currentParams['search-query']
+    changeRoute(currentParams)
+    
+    getProjects()
+}
 const sortBy = (key: string) => {
-    state.tableData.order_by = key
-    state.tableData.sort = state.tableData.sort === 'desc' ? 'asc' : 'desc'
-    state.arrows.arr = state.tableData.sort
+    state.tableData['sort-by'] = key
+    state.tableData['sort-method'] = state.tableData['sort-method'] === 'desc' ? 'asc' : 'desc'
+    state.arrows.arr = state.tableData['sort-method']
     state.arrows.col = key
+    
+    // Completely remove search-query if it's empty
+    if (!state.tableData['search-query'] || state.tableData['search-query'] === '') {
+        delete state.tableData['search-query']
+    }
+    
+    // Also check tableParam
+    if (state.tableParam && (!state.tableParam['search-query'] || state.tableParam['search-query'] === '')) {
+        delete state.tableParam['search-query']
+    }
+    
     getProjects()
 }
 const getObjectValue = (obj: { [x: string]: any }, path: string, defaultValue?: any) => {
@@ -224,8 +306,6 @@ function checkIcon(column: { sortable: boolean; name: string }) {
     }
 }
 const changer = (data: string) => {
-    // let newUrl = data.replace('http://', 'https://')
-    // return newUrl
     let value = null
     let params = new URL(data).searchParams;
     if (params) {
@@ -258,17 +338,87 @@ const toggleFilter = () => {
 }
 function changeRoute(data: object) {
     const paramData = Object.fromEntries(
-        Object.entries(data).filter(([, value]) => value !== null)
+        Object.entries(data).filter(([key, value]) => 
+            value !== null && 
+            value !== '' && 
+            value !== undefined &&
+            // Remove search-query if it's empty
+            !(key === 'search-query' && (value === '' || value === null))
+        )
     )
     router.replace({
         query: paramData
     })
 }
+const debouncedGetProjects = _debounce(() => {
+    if (isFetching.value) return
+    getProjects()
+}, 100)
 const isDataEmpty = ref(false)
+// Add this flag to prevent double calls
+const isFetching = ref(false)
 
-watch(state.tableData, () => { getProjects() }, { immediate: true, });
+// Handle initial fetch with watchOnce
+watchOnce(
+    [() => state.tableData, () => props.params],
+    () => {
+        // Sync tableData with props.params on initialization
+        if (props.params) {
+            state.tableData = { ...state.tableData, ...props.params }
+            state.tableParam = props.params
+        }
+        nextTick(() => {
+            getProjects()
+        })
+    },
+    { immediate: true }
+)
 
-watch(() => props.params, (newParam) => { state.tableParam = newParam, getProjects() }, { deep: true });
+// Handle subsequent changes with regular watch
+watch(
+    [() => props.params],
+    ([newParams], [oldParams]) => {
+        const paramsChanged = JSON.stringify(newParams) !== JSON.stringify(oldParams)
+        
+        if (paramsChanged && newParams) {
+            // Check if search input is actually empty
+            const searchInput = document.getElementById(inputId) as HTMLInputElement
+            const hasSearchValue = searchInput && searchInput.value && searchInput.value.trim() !== ''
+            
+            // Update tableData with new params
+            const updatedData = { ...state.tableData, ...newParams }
+            
+            // If search input is empty, don't restore search-query from params
+            if (!hasSearchValue && updatedData['search-query']) {
+                delete updatedData['search-query']
+            }
+            
+            state.tableData = updatedData
+            state.tableParam = { ...newParams }
+            
+            // Also clean tableParam if search is empty
+            if (!hasSearchValue && state.tableParam['search-query']) {
+                delete state.tableParam['search-query']
+            }
+            
+            debouncedGetProjects()
+        }
+    },
+    { deep: true }
+)
+
+// Watch for tableData changes (like limit, search, etc.)
+watch(
+    () => state.tableData,
+    (newTableData, oldTableData) => {
+        const tableDataChanged = JSON.stringify(newTableData) !== JSON.stringify(oldTableData)
+        
+        if (tableDataChanged) {
+            debouncedGetProjects()
+        }
+    },
+    { deep: true }
+)
 </script>
 
 <template>
@@ -278,7 +428,7 @@ watch(() => props.params, (newParam) => { state.tableParam = newParam, getProjec
                 <div class="col-sm-12 col-md-6" v-if="props.table_show">
                     <div class="dataTables_length" id="datatable_length">
                         <label>Show
-                            <select v-model="state.tableData.perpage" name="datatable_length" aria-controls="datatable"
+                            <select v-model="state.tableData.limit" name="datatable_length" aria-controls="datatable"
                                 class="form-select form-select-sm">
                                 <option v-for="(records, index) in state.perPage" :key="index" :value="records">
                                     {{ records }}
@@ -289,10 +439,18 @@ watch(() => props.params, (newParam) => { state.tableParam = newParam, getProjec
                 </div>
                 <div class="col-sm-12 col-md-6 d-flex flex-row justify-content-end pe-0"
                     v-if="props.table_search || props.table_filter">
-                    <div id="datatable_filter" class="dataTables_filter"
+                    <div id="datatable_filter" class="dataTables_filter position-relative"
                         v-if="props.table_search && !state.toggleButton">
-                        <label>Search:<input :id="inputId" @input="searching" type="search"
-                                class="form-control form-control-sm" placeholder="" aria-controls="datatable" /></label>
+                        <label>Search:
+                            <input :id="inputId" @input="searching" type="search"
+                                class="form-control form-control-sm pe-4" placeholder="" aria-controls="datatable" />
+                            <button v-if="state.tableData['search-query']" 
+                                @click="clearSearch" 
+                                type="button" 
+                                class="btn-clear-search">
+                                <i class="ri-close-line"></i>
+                            </button>
+                        </label>
                     </div>
                     <div class="ms-1" style="text-align: right" v-if="props.table_filter">
                         <button type="button" class="btn btn-sm btn-info" id="show_search_filter" @click="toggleFilter">

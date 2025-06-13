@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import VueCropper, { type VueCropperMethods } from 'vue-cropperjs'
 import 'cropperjs/dist/cropper.css'
-import { employeeService } from '@/service'
+// import { employeeService } from '@/service'
 
 // Define prop types
 const props = defineProps<{ route_id: string | string[] | number }>()
@@ -82,7 +82,7 @@ async function uploadPhoto() {
       const formData = new FormData()
       formData.append('photo', blob)
 
-      employeeService.updateImage(props.route_id, formData, () => emit('reload'))
+      // employeeService.updateImage(props.route_id, formData, () => emit('reload'))
     })
 }
 </script>

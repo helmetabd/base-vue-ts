@@ -6,7 +6,7 @@ function checkRole(
   requiredPermission: any,
   mode: string,
   suRestriction = false,
-  targetRole: number | null = null
+  targetRole: number | string | null = null
 ) {
   const router = useRoute()
 

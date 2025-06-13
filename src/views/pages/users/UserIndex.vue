@@ -1,41 +1,73 @@
 <script setup lang="ts">
 import Layout from '@/layouts/MainLayout.vue'
 import { reactive, watch } from 'vue'
+import * as yup from "yup"
 import BasicInput from '@/components/inputs/BasicInput.vue'
 import BaseCard from '@/components/cards/base-card.vue'
-import Swal from 'sweetalert2'
+import Multiselect from '@vueform/multiselect';
+import '@vueform/multiselect/themes/default.css'
 import checkRole from '../../../utils/adminActionButton'
-import { userService, utilsService } from '@/service'
+import { userService } from '@/service'
 import ModalBasic from '@/components/modals/ModalBasic.vue'
-import { errorHelper } from '../../..//utils/alertHelper'
 import type { FormField, Option, Param } from '@/interfaces/Utils'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import DatatableServer from '@/components/datatables/DatatableServer.vue'
+import { useForm } from 'vee-validate'
 
-const router = useRouter()
 const route = useRoute()
+
+const schema = yup.object().shape({
+  firstname: yup.string().required('First name is required'),
+  lastname: yup.string().required('Last name is required'),
+  username: yup.string().required('Username is required'),
+  email: yup.string().email('Invalid email').required('Email is required'),
+  password: yup.string().min(8, 'Password must be at least 8 characters').required('Password is required'), // Fixed error message
+  phone: yup.string()
+    .required('Phone number is required')
+    .test('indonesian-phone', 'Please enter a valid Indonesian phone number (e.g., 08123456789, 628123456789, or +628123456789)',
+      function (value) {
+        if (!value) return false;
+        return /^(?:\+62|62|0)8[1-9][0-9]{7,10}$/.test(value);
+      }
+    ),
+  role: yup.string().required('Role is required')
+})
+
+const { handleSubmit, resetForm, meta, defineField, errors } = useForm({
+  validationSchema: schema,
+  initialValues: {} as FormField
+});
 
 const state = reactive({
   url: '/users',
   checked: false,
   modalAdd: false,
-  searchPandawaForm: '' as string,
-  userForm: {} as FormField,
+  userForm: {
+    firstname: defineField('firstname'),
+    lastname: defineField('lastname'),
+    username: defineField('username'),
+    email: defineField('email'),
+    password: defineField('password'),
+    phone: defineField('phone'),
+    role: defineField('role')
+  },
   options: {
-    role: {} as Option
+    role: [
+      { value: 'STAKEHOLDER', label: 'Stake Holder' },
+      { value: 'USER', label: 'User' }
+    ] as Option[]
   },
   tableData: {
-    order_by: 'id',
-    sort: 'asc'
+    'sort-by': 'id',
+    'sort-method': 'asc'
   } as Param,
-  statusSearch: {} as { message: string; code: string },
   componentKey: 0,
   columns: [
     { hidden: false, label: 'ID', name: 'id', sortable: true },
     {
       hidden: false,
       label: 'Name',
-      name: 'name',
+      name: 'fullname',
       class: 'text-start',
       bold: true,
       custom: {
@@ -49,13 +81,11 @@ const state = reactive({
     {
       hidden: false,
       label: 'Auth/Role',
-      name: 'role_id',
-      display: 'role.id',
+      name: 'role',
       badge: {
         types: [
-          { value: 1, type: 'danger', label: 'Super Admin' },
-          { value: 2, type: 'primary', label: 'Admin' },
-          { value: 3, type: 'warning', label: 'User' }
+          { value: 'USER', type: 'primary', label: 'User' },
+          { value: 'STAKEHOLDER', type: 'warning', label: 'Stack Holder' }
         ]
       },
       sortable: true
@@ -63,11 +93,11 @@ const state = reactive({
     {
       hidden: false,
       label: 'Status',
-      name: 'status',
+      name: 'isActive',
       badge: {
         types: [
-          { value: 1, type: 'success', label: 'Active' },
-          { value: 0, type: 'danger', label: 'Suspended' }
+          { value: true, type: 'success', label: 'Active' },
+          { value: false, type: 'danger', label: 'Suspended' }
         ]
       },
       sortable: true
@@ -80,124 +110,149 @@ const state = reactive({
     },
     {
       hidden: false,
-      label: 'NIP',
-      name: 'nip',
+      label: 'Phone',
+      name: 'phone',
+      custom: {
+        icon: 'ri-phone-line me-1 text-muted'
+      },
       sortable: false
     },
     {
       hidden: false,
-      label: 'Last Login',
-      name: 'last_login',
+      label: 'Created At',
+      name: 'createdAt',
       custom: {
         icon: 'ri-time-line me-1 text-muted'
       },
       sortable: false
     }
   ],
+  submit: false,
   inputFields: [
     {
-      id: 1,
-      label: 'Pandawa User ID',
-      name: 'pandawa_user_id',
-      pandawa: 'id',
-      inputType: 'text',
-      modelValue: ''
-    },
-    {
-      id: 2,
-      label: 'NIP',
-      name: 'nip',
-      pandawa: 'nip',
-      inputType: 'text',
-      modelValue: ''
-    },
-    {
-      id: 3,
-      label: 'Name',
-      name: 'name',
-      pandawa: 'name',
+      label: 'First Name',
+      name: 'firstname',
       inputType: 'text',
       modelValue: '',
       required: true
     },
     {
-      id: 4,
+      label: 'Last Name',
+      name: 'lastname',
+      inputType: 'text',
+      modelValue: '',
+      required: true
+    },
+    {
+      label: 'Username',
+      name: 'username',
+      inputType: 'text',
+      modelValue: '',
+      required: true
+    },
+    {
       label: 'Email',
       name: 'email',
-      pandawa: 'email',
       inputType: 'email',
-      modelValue: ''
-    }
+      modelValue: '',
+      required: true
+    },
+    {
+      label: 'Password',
+      name: 'password',
+      inputType: 'password',
+      modelValue: '',
+      required: true
+    },
+    {
+      label: 'Phone',
+      name: 'phone',
+      inputType: 'tel', // Changed from 'phone' to 'tel' for better HTML semantics
+      modelValue: '',
+      required: true,
+      placeholder: 'e.g., 08123456789 or +628123456789'
+    },
   ]
 })
 
-function getProjects() {
-  const paramData = Object.fromEntries(
-    Object.entries(state.tableData).filter(([, value]) => value !== null)
-  )
-  router.replace({
-    query: paramData
-  })
-  state.tableData = paramData
+// Renamed function to better reflect its purpose
+function updateTableParams() {
+  let query = route.query
+  if (Object.keys(query).length > 0) {
+    state.tableData = { ...state.tableData, ...query }
+  }
 }
 
-function createData() {
-  userService.store(state.userForm).then(() => {
-    Swal.fire({
-      icon: 'success',
-      text: 'Berhasil menyimpan data',
-      title: 'Success',
-      allowOutsideClick: false,
-      allowEscapeKey: false
-    })
-      .then((e) => {
-        if (e.isConfirmed) {
-          forceRender()
-          state.modalAdd = false
-        }
-      })
-      .catch((e) => errorHelper(e))
-  })
+// Function to format phone number to +62 format
+function formatPhoneToInternational(phone: string): string {
+  if (!phone) return phone;
+
+  // Remove all non-digit characters first
+  const cleanPhone = phone.replace(/\D/g, '');
+
+  // Handle different formats
+  if (cleanPhone.startsWith('628')) {
+    // Already in 628 format, just add +
+    return '+' + cleanPhone;
+  } else if (cleanPhone.startsWith('62')) {
+    // 62 format, just add +
+    return '+' + cleanPhone;
+  } else if (cleanPhone.startsWith('08')) {
+    // 08 format, replace 0 with +62
+    return '+62' + cleanPhone.substring(1);
+  } else if (cleanPhone.startsWith('8')) {
+    // 8 format, add +62
+    return '+62' + cleanPhone;
+  }
+
+  return phone; // Return original if no pattern matches
 }
 
-async function searchPandawaUser(email: string) {
-  await utilsService
-    .getPandawaUser(email)
-    .then((res) => {
-      state.inputFields.forEach((e) => {
-        state.userForm[e.name] = res[e.pandawa]
-      })
-      state.statusSearch.message = 'User has been found'
-      state.statusSearch.code = 'success'
-    })
-    .catch((e) => {
-      console.error(e)
-      state.statusSearch.message = 'User not found'
-      state.statusSearch.code = 'danger'
-    })
-}
+// Use handleSubmit from vee-validate for better form handling
+const onSubmit = handleSubmit((values) => {
+  // Format phone number before submission
+  let form = values
+  if (values.phone) {
+    form.phone = formatPhoneToInternational(String(values.phone));
+  }
+  userService.store(form, () => {
+    forceRender()
+    closeModalAndReset()
+    state.submit = true
+  }, {
+    allowOutsideClick: false,
+    allowEscapeKey: false
+  })
+})
 
 function toggleHeader(header: string) {
-  let index = state.columns.findIndex((col) => col.label === header)
-  state.columns[index].hidden = !state.columns[index].hidden
+  const index = state.columns.findIndex((col) => col.label === header)
+  if (index !== -1) {
+    state.columns[index].hidden = !state.columns[index].hidden
+  }
 }
 
 function forceRender() {
   state.componentKey++
 }
 
-async function clear() {
-  state.modalAdd = true
-  state.searchPandawaForm = ''
-  state.statusSearch = {} as { message: string; code: string }
-  state.options = await userService.create()
-  state.userForm = {}
+// Extracted common reset logic
+function closeModalAndReset() {
+  state.modalAdd = false
+  resetForm()
   state.checked = false
 }
+
+async function openAddModal() {
+  state.modalAdd = true
+  resetForm()
+  state.checked = false
+}
+
 watch(() => route.query, (newValue, oldValue) => {
   if (newValue !== oldValue) {
-    state.tableData = newValue
-    getProjects()
+    state.tableData = { ...state.tableData, ...newValue as Param }
+    updateTableParams()
   }
 }, { immediate: true, deep: true })
 </script>
@@ -215,15 +270,15 @@ watch(() => route.query, (newValue, oldValue) => {
               aria-haspopup="true" aria-expanded="false">
               <i class="las la-columns"></i> <span class="hide-xs">Column</span>
             </button>
-            <div class="dropdown-menu p-3 pb-1 fs-11 text-uppercase" id="showHideColumn" style="">
+            <div class="dropdown-menu p-3 pb-1 fs-11 text-uppercase" id="showHideColumn">
               <div class="form-check form-check-success mb-1 dropdown-item" v-for="(toggle, index) in state.columns"
-                :key="index">
+                :key="`column-${index}`">
                 <input class="form-check-input toggle-vis" type="checkbox" :checked="!toggle.hidden"
                   @change="toggleHeader(toggle.label)" />
                 {{ toggle.label }}
               </div>
             </div>
-            <button class="btn btn-primary btn-sm m-1" @click="clear" type="button"
+            <button class="btn btn-primary btn-sm m-1" @click="openAddModal" type="button"
               v-if="checkRole('user.users', 'create')">
               <i class="ri-add-circle-line align-bottom me-1"></i>Add User
             </button>
@@ -233,41 +288,23 @@ watch(() => route.query, (newValue, oldValue) => {
           <DatatableServer :key="state.componentKey" :url="state.url" :column="state.columns"
             :params="state.tableData" />
         </template>
-        <template #customFooter>
-          <div class="card-footer pt-1 pb-1 bg-light">
-            <code>API SOURCE: PANDAWA</code>
-          </div>
-        </template>
       </BaseCard>
     </div>
+
     <ModalBasic :modelValue="state.modalAdd" :title="'Create User'" @toggle="state.modalAdd = $event">
       <template #modalBody>
-        <form @submit.prevent="createData">
+        <form @submit.prevent="onSubmit">
           <div class="row g-3">
-            <div class="col-xxl-12">
-              <label for="searchPandawaUserForm" class="mt-2 mb-2">Pandawa Email</label>
-              <div class="input-group mb-3">
-                <input id="searchPandawaUserForm" type="email" class="form-control" placeholder="Pandawa user email"
-                  aria-label="Pandawa User Search" aria-describedby="searchPandawa searchStatus"
-                  v-model="state.searchPandawaForm" />
-                <button class="btn btn-outline-secondary" type="button" id="searchPandawa"
-                  @click="searchPandawaUser(state.searchPandawaForm)">
-                  Search
-                </button>
-              </div>
-              <div :class="'form-text text-' + state.statusSearch.code" v-if="state.statusSearch" id="searchStatus">
-                {{ state.statusSearch.message }}
-              </div>
-            </div>
-          </div>
-          <div class="row g-3">
-            <div v-for="input in state.inputFields" :key="input.id" class="col-xxl-12">
-              <BasicInput :label="input.label" :type="input.inputType" :name="input.name" :placeholder="input.label"
-                :required="input.required ? true : false" disabled v-model="state.userForm[input.name]" />
+            <div v-for="input in state.inputFields" :key="input.name" class="col-xxl-12">
+              <BasicInput :label="input.label" :type="input.inputType" :name="input.name"
+                :placeholder="input.placeholder || input.label" :required="input.required"
+                v-model="(state.userForm as any)[input.name][0].value" :errors="errors[input.name]" />
             </div>
             <div class="col-12">
               <label class="mt-2 mb-2">Select Role</label>
-              <MultiSelect v-model="state.userForm.role" :options="state.options.role" placeholder="Select Role" />
+              <Multiselect v-model="state.userForm.role[0].value" :options="state.options.role"
+                placeholder="Select Role" />
+              <span v-if="errors.role" class="text-danger">{{ errors.role }}</span>
             </div>
             <div class="col-5">
               <input type="checkbox" id="checkbox" style="margin-right: 4px" v-model="state.checked" />
@@ -275,10 +312,10 @@ watch(() => route.query, (newValue, oldValue) => {
             </div>
             <div class="col-7">
               <div class="hstack gap-2 justify-content-end">
-                <button type="button" class="btn btn-light" @click="state.modalAdd = false">
+                <button type="button" class="btn btn-light" @click="closeModalAndReset">
                   Close
                 </button>
-                <button :disabled="state.checked ? false : true" type="submit" class="btn btn-primary">
+                <button :disabled="!state.checked" type="submit" class="btn btn-primary">
                   Submit
                 </button>
               </div>

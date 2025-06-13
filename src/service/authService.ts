@@ -8,18 +8,37 @@ const apiClient = axios.create({
     'Content-Type': 'application/json'
   }
 })
+
 const check = async (token: string) => {
-  await apiClient
-    .post(`/auth/check`, null, {
-      headers: {
-        Authorization: token
-      }
-    })
-    .then((res) => {
-      return res
-    })
-    .catch((e) => {
-      throw e
-    })
+  try {
+    // Remove 'Bearer ' prefix if present
+    const cleanToken = token.replace(/^Bearer\s+/i, '')
+    
+    // Decode JWT payload
+    const payload = JSON.parse(atob(cleanToken.split('.')[1]))
+    
+    // Check if token is expired
+    const currentTime = Math.floor(Date.now() / 1000)
+    if (payload.exp && payload.exp < currentTime) {
+      throw new Error('Token expired!')
+    }
+    
+    return { valid: true }
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Token expired!') {
+      throw { response: { data: { message: 'Token expired!' } } }
+    }
+    throw { response: { data: { message: 'Invalid token' } } }
+  }
 }
-export { check }
+
+const register = async (userData: { email: string; username: string; password: string }) => {
+  try {
+    const response = await apiClient.post('/auth/register', userData)
+    return response.data
+  } catch (error) {
+    throw error
+  }
+}
+
+export { check, register }

@@ -2,6 +2,7 @@ import apiClient from '../service/ApiClientService.js'
 
 import { defineStore } from 'pinia'
 import { useStorage } from '@vueuse/core'
+import permissionSuper from '@/config/permissionSuper.json'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -44,19 +45,21 @@ export const useAuthStore = defineStore('auth', {
       try {
         this.loading = true
         await apiClient.post('/auth/login', payload).then((res) => {
-          this.token = res.data.token
-          this.role = res.data.role
+          console.log(res.data)
+          this.token = res.data.accessToken
+          this.role = res.data.user.role
           this.user = res.data.user
-          this.permissions = res.data.permissions
-          const settings = res.data.user.settings
-          if (settings != null) {
-            useStorage('layoutValue', settings)
+          if(res.data.user.role !== 'USER'){
+            this.permissions = permissionSuper
+          } else {
+            this.permissions = []
           }
         })
       } catch (error: any) {
         if (error.response?.status == 503 && error.response.data.message == 'maintenance') {
-          this.error = 'Yudhistira is under maintenance!'
+          this.error = 'Siwa Manager is under maintenance!'
         } else {
+          console.log(error)
           this.error = error.response.data.message
         }
       } finally {

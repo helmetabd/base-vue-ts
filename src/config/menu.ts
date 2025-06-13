@@ -20,16 +20,6 @@ export default function menu() {
           admin_required: false,
           caret: false
         },
-        {
-          name: 'user.logs',
-          display_name: 'User Logs',
-          icon: null,
-          route: 'user.logs',
-          module: 'user.users',
-          auth_level_min: 3,
-          admin_required: false,
-          caret: false
-        }
       ]
     },
     {

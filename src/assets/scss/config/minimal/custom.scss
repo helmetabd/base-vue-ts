@@ -944,3 +944,41 @@ span.text-platinum {
 .text-platinum-emphasis {
   color: $platinum-text-emphasis !important;
 }
+
+.btn-clear-search {
+    position: absolute;
+    right: 8px;
+    top: 40%;
+    transform: translateY(-50%);
+    border: none;
+    background: none;
+    padding: 4px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    color: #6c757d;
+}
+
+.btn-clear-search:hover {
+    background-color: #f8f9fa;
+    color: #495057;
+}
+
+.btn-clear-search:active {
+    background-color: #e9ecef;
+    transform: translateY(-50%) scale(0.95);
+}
+
+.btn-clear-search i {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.dataTables_filter input {
+    padding-right: 32px !important;
+}

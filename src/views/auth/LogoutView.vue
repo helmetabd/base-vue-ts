@@ -34,10 +34,10 @@ onMounted(() => {
             <div class="text-center mt-sm-5 mb-4 text-white-50">
               <div>
                 <router-link :to="{ name: 'auth.login' }" class="d-inline-block auth-logo">
-                  <img src="@/assets/images/logo-light.png" alt="" height="20" />
+                  <img src="@/assets/images/logo-light.png" alt="" height="60" />
                 </router-link>
               </div>
-              <p class="mt-3 fs-15 fw-medium">Team Login</p>
+              <p class="mt-3 fs-15 fw-medium">Login</p>
             </div>
           </div>
         </div>
@@ -62,7 +62,7 @@ onMounted(() => {
       <div class="container">
         <div class="row justify-content-center">
           <div class="col col-sm-10 col-md-8 col-lg-6 col-xl-5">
-            <div class="text-center"><i class="ri-copyright-line"></i> Yushitira Gawebecik 2024</div>
+            <div class="text-center"><i class="ri-copyright-line"></i> Siwa Manager Gawebecik {{ new Date().getFullYear() }}</div>
           </div>
         </div>
       </div>

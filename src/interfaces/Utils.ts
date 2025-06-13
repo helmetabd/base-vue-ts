@@ -2,11 +2,11 @@ import type { Modules, Permission } from './User'
 
 export interface Option {
   label: string | number
-  value: number
+  value: number | string | boolean
   department?: number
 }
 export interface FormField {
-  [key: string]: string | number | null | undefined | string[]
+  [key: string]: string | number | boolean | null | undefined | string[]
 }
 
 export interface SpecialDashboard {
@@ -20,26 +20,28 @@ export interface Simple {
 export interface links {
   url: string | null
   label: string
-  active: boolean
+  isActive: boolean
+}
+export interface ResponseRaw {
+  data: ResponseUtils,
+  status: string,
+  message: string,
+  code: number
 }
 export interface ResponseUtils {
-  data: any[]
-  meta: {
-    current_page: number
-    from: number
-    last_page: number
-    links: links[]
-    path: string
-    per_page: number
-    to: number
-    total: number
-  }
-  links: {
-    first: string
-    last: string
-    prev: string | null
-    next: string | null
-  }
+  items: any[]
+  pagination: PaginationRaw
+  links: links[]
+}
+export interface PaginationRaw {
+  currentPage: number
+  firstPageUrl: string
+  lastPage: number
+  lastPageUrl: string
+  nextPageUrl: string | null
+  perPage: number
+  prevPageUrl: string | null
+  total: number
 }
 export interface PaginationType {
   lastPage: number
@@ -153,4 +155,16 @@ export interface Privilage {
   params: {
     modules: Modules[]
   }
+}
+export interface Menu {
+  name: string;
+  display_name: string;
+  icon: string | null;
+  route: string | null;
+  module: string;
+  auth_level_min: number;
+  admin_required: boolean;
+  caret: boolean;
+  childs?: Menu[];
+  type?: string;
 }

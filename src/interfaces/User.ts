@@ -1,39 +1,4 @@
-import type { BasicEmployee } from './Employee'
-import type { FormField, Option } from './Utils'
-
-export interface State {
-  user: User
-  userId: string | string[]
-  userProfileFormField: FormField
-  profileModal: boolean
-  pandawaModal: boolean
-  inputProfile: {
-    id: number
-    label: string
-    name: keyof FormField
-    inputType: string
-    modelValue: string | number
-    required?: boolean
-  }[]
-  checked: boolean
-  userLogsColumns: {
-    label: string
-    name?: string
-    class: string
-    target?: boolean
-    setter?: boolean
-  }[]
-  userAccountLogsColumns: {
-    label: string
-    name?: string
-    class: string
-    setter?: boolean
-  }[]
-  editParams: {
-    status: Option[]
-    role: Option[]
-  }
-}
+import type { Option } from './Utils'
 
 export interface Role {
   id: number
@@ -41,15 +6,18 @@ export interface Role {
 }
 
 export interface User {
-  id: number
-  nip: number | null
-  status: number
-  name: string
+  id: string
+  isActive: boolean
+  username: string,
+  firstname: string
+  lastname: string
+  fullname: string
   email: string
   avatar: string | null
-  last_login: string
-  role: Role
-  employee: BasicEmployee
+  createdAt: string
+  updatedAt: string
+  role: string,
+  phone: string
 }
 
 export interface UserEdit {

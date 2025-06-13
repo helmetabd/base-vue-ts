@@ -2,7 +2,7 @@
 import { useForm } from 'vee-validate'
 import * as yup from 'yup'
 import router from '../../router'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 import { storeToRefs } from 'pinia'
 const state = reactive({
@@ -109,14 +109,24 @@ const submitForm = reactive({
   user_identity: null,
   password: ''
 })
+const showPassword = ref(false)
+
 const authStore = useAuthStore()
 const { loading, error } = storeToRefs(authStore)
 
 // Validation schema using Yup
 const validationSchema = yup.object({
   user_identity: yup.string().required('User Identity is required'),
-  password: yup.string().required('Password is required')
+  password: yup.string().required('Password is required').min(8, 'Password must be at least 8 characters')
+    .matches(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .matches(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .matches(/[0-9]/, 'Password must contain at least one number')
 })
+
+// Toggle password visibility
+const togglePasswordVisibility = () => {
+  showPassword.value = !showPassword.value
+}
 
 // Use vee-validate form
 const { handleSubmit, defineField, errors } = useForm({
@@ -157,7 +167,7 @@ const signIn = handleSubmit(async (values) => {
             <div class="text-center mt-sm-5 mb-4 text-white-50">
               <div>
                 <router-link :to="{ name: 'auth.login' }" class="d-inline-block auth-logo">
-                  <img src="@/assets/images/logo-light.png" alt="" height="20" />
+                  <img src="@/assets/images/logo-light.png" alt="" height="60" />
                 </router-link>
               </div>
             </div>
@@ -176,15 +186,9 @@ const signIn = handleSubmit(async (values) => {
                   <form @submit.prevent="signIn">
                     <div class="mb-3">
                       <label for="user_identity" class="form-label">User Identity</label>
-                      <input 
-                        type="text" 
-                        class="form-control" 
-                        :class="{ 'is-invalid': errors.user_identity }"
-                        id="user_identity" 
-                        placeholder="Enter Email / Phone / NIP"
-                        v-model="user_identity" 
-                        v-bind="user_identityAttrs"
-                      />
+                      <input type="text" class="form-control" :class="{ 'is-invalid': errors.user_identity }"
+                        id="user_identity" placeholder="Enter Email / Phone / NIP" v-model="user_identity"
+                        v-bind="user_identityAttrs" />
                       <div v-if="errors.user_identity" class="invalid-feedback">
                         <span>{{ errors.user_identity }}</span>
                       </div>
@@ -193,15 +197,15 @@ const signIn = handleSubmit(async (values) => {
                     <div class="mb-3">
                       <label class="form-label" for="password-input">Password</label>
                       <div class="position-relative auth-pass-inputgroup mb-3">
-                        <input 
-                          type="password" 
-                          v-model="password" 
-                          v-bind="passwordAttrs"
-                          class="form-control pe-5"
-                          :class="{ 'is-invalid': errors.password }"
-                          placeholder="Enter password" 
-                          id="password-input" 
-                        />
+                        <input :type="showPassword ? 'text' : 'password'" class="form-control pe-5 password-input"
+                          :class="{ 'is-invalid': errors.password }" @paste.prevent placeholder="Enter password"
+                          id="password-input" aria-describedby="passwordInput" v-model="password"
+                          v-bind="passwordAttrs">
+                        <button
+                          class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-addon"
+                          type="button" @click="togglePasswordVisibility">
+                          <i :class="showPassword ? 'ri-eye-off-fill' : 'ri-eye-fill'" class="align-middle"></i>
+                        </button>
                         <div v-if="errors.password" class="invalid-feedback">
                           <span>{{ errors.password }}</span>
                         </div>
@@ -218,8 +222,13 @@ const signIn = handleSubmit(async (values) => {
               </div>
             </div>
             <div class="mt-4 text-center">
+              <p class="mb-0">Don't have an account ? <router-link :to="{ name: 'auth.register' }"
+                  class="fw-semibold text-primary text-decoration-underline"> Signup </router-link>
+              </p>
+            </div>
+            <div class="mt-4 text-center">
               <p class="mb-0">
-                <i class="ri-copyright-line"></i> {{ new Date().getFullYear() }} Yudhistira. by IT
+                <i class="ri-copyright-line"></i> {{ new Date().getFullYear() }} Siwa Manager. by IT
                 GBNA
               </p>
             </div>

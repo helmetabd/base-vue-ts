@@ -1,0 +1,4 @@
+[
+  { "module": "user", "create": 0, "read": 1, "update": 0 },
+  { "module": "user.users", "create": 1, "read": 1, "update": 1 }
+]

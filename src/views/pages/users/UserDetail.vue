@@ -1,183 +1,175 @@
 <script setup lang="ts">
 import Layout from '@/layouts/MainLayout.vue'
-import 'moment'
+import * as yup from "yup"
+import Multiselect from '@vueform/multiselect';
+import '@vueform/multiselect/themes/default.css'
 import ModalBasic from '@/components/modals/ModalBasic.vue'
 import BasicInput from '@/components/inputs/BasicInput.vue'
 import Swal from 'sweetalert2'
-import moment, { type MomentInput } from 'moment'
 import { onMounted, reactive } from 'vue'
 import { userService } from '@/service'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import checkRole from '../../../utils/adminActionButton'
 import { getAvatar } from '../../../utils/assetsHelper'
 import BaseCard from '@/components/cards/base-card.vue'
 import { responseHelper } from '@/utils/responseHelper'
-import type { State, User } from '@/interfaces/User'
+import type { User } from '@/interfaces/User'
 import type { FormField, Option } from '@/interfaces/Utils'
+import { useForm } from 'vee-validate';
+import checkOwner from '@/utils/ownerActionButton';
 
 const router = useRoute()
+const route = useRouter()
 
-const state = reactive<State>({
+const schema = yup.object().shape({
+  firstname: yup.string().required('First name is required'),
+  lastname: yup.string().required('Last name is required'),
+  username: yup.string().required('Username is required'),
+  email: yup.string().email('Invalid email').required('Email is required'),
+  phone: yup.string()
+    .required('Phone number is required')
+    .test('indonesian-phone', 'Please enter a valid Indonesian phone number (e.g., 08123456789, 628123456789, or +628123456789)',
+      function (value) {
+        if (!value) return false;
+        return /^(?:\+62|62|0)8[1-9][0-9]{7,10}$/.test(value);
+      }
+    ),
+  role: yup.string().required('Role is required'),
+  isActive: yup.boolean().required('Status is required')
+})
+
+const { handleSubmit, resetForm, meta, defineField, errors, setValues } = useForm({
+  validationSchema: schema,
+  initialValues: {} as FormField
+});
+
+const state = reactive({
   user: {} as User,
   userId: router.params.id,
-  userProfileFormField: {} as FormField,
+  userProfileFormField: {
+    firstname: defineField('firstname'),
+    lastname: defineField('lastname'),
+    username: defineField('username'),
+    email: defineField('email'),
+    phone: defineField('phone'),
+    role: defineField('role'),
+    isActive: defineField('isActive')
+  },
   profileModal: false,
-  pandawaModal: false,
   inputProfile: [
     {
-      id: 1,
-      label: 'Name',
-      name: 'name',
+      label: 'Username',
+      name: 'username',
       inputType: 'text',
-      modelValue: '',
       required: true
     },
     {
-      id: 2,
-      label: 'NIP',
-      name: 'nip',
-      inputType: 'text',
-      modelValue: '',
-      required: true
-    },
-    {
-      id: 3,
       label: 'Email',
       name: 'email',
       inputType: 'email',
-      modelValue: '',
       required: true
-    }
+    },
+    {
+      label: 'Phone',
+      name: 'phone',
+      inputType: 'tel', // Changed from 'phone' to 'tel' for better HTML semantics
+      required: true,
+      placeholder: 'e.g., 08123456789 or +628123456789'
+    },
   ],
   checked: false,
-  userLogsColumns: [
-    { label: 'ID', name: 'tid', class: 'text-center' },
-    {
-      label: 'Activity',
-      name: 'activity',
-      class: 'text-start'
-    },
-    {
-      label: 'Staff',
-      target: true,
-      class: 'text-center'
-    },
-    {
-      label: 'Time Stamp',
-      name: 'created_at',
-      class: 'text-center'
-    }
-  ],
-  userAccountLogsColumns: [
-    { label: 'ID', name: 'tid', class: 'text-center' },
-    {
-      label: 'Activity',
-      name: 'activity',
-      class: 'text-start'
-    },
-    {
-      label: 'Setter',
-      setter: true,
-      class: 'text-center'
-    },
-    {
-      label: 'Time Stamp',
-      name: 'created_at',
-      class: 'text-center'
-    }
-  ],
   editParams: {
-    status: [] as Option[],
-    role: [] as Option[]
+    status: [
+      { value: true, label: 'Active' },
+      { value: false, label: 'Suspended' }
+    ] as Option[],
+    role: [
+      { value: 'STAKEHOLDER', label: 'Stake Holder' },
+      { value: 'USER', label: 'User' }
+    ] as Option[]
   }
 })
 
-async function goToCreator(creatorId: number) {
-  state.user = await userService.detail(creatorId)
-  // this.fetchLogs(creatorId);
-}
-
 const fetchstate = async () => {
   try {
-    state.user = await userService.detail(Number(state.userId))
-  } catch (error: any) {
-    Swal.fire('error', error.response.message, 'error')
-  }
-}
-
-function formatDate(date: MomentInput, dateType: string): string {
-  const types = [
-    { name: 'iso', dateFormat: 'YYYY-MM-DDTHH:mm:ss.SSS[Z]' },
-    { name: 'normal', dateFormat: 'DD-MM-YYYY HH:mm:ss' }
-  ]
-  let formattedDate = ''
-  if (date) {
-    types.forEach((element) => {
-      if (element.name === dateType) {
-        formattedDate = moment(date, element.dateFormat).format('DD MMM YYYY - HH:mm:ss')
-      }
-    })
-  } else {
-    return ''
-  }
-  return formattedDate
-}
-
-function onSubmit() {
-  userService
-    .update(Number(state.userId), state.userProfileFormField)
-    .then((res) => {
-      fetchstate()
-      responseHelper('success', res)
-    })
-    .catch((error: any) => Swal.fire('error', error.response.message, 'error'))
-  state.profileModal = !state.profileModal
-}
-
-async function toggleProfileModal() {
-  try {
-    const res = await userService.edit(Number(router.params.id))
-    const { data: user, params: params } = res
-    state.editParams = params
-    state.inputProfile.forEach((element) => {
-      state.userProfileFormField[element.name as keyof FormField] = state.user[
-        element.name as keyof User
-      ] as string | number
-    })
-    state.userProfileFormField.role = user.role_id
-    state.userProfileFormField.status = user.status
-    state.profileModal = !state.profileModal
+    state.user = await userService.detail(String(state.userId))
   } catch (error: any) {
     responseHelper('error', error)
   }
 }
 
-function fixPandawa(e: Event) {
-  const target = e.target as HTMLFormElement
-  const data = new FormData(target)
+// Function to format phone number to +62 format
+function formatPhoneToInternational(phone: string): string {
+  if (!phone) return phone;
 
-  userService
-    .fixPandawa(Number(router.params.id), data)
-    .then((res) => {
-      Swal.fire('Success', res.data.message, 'success').then((event) => {
-        if (event.isConfirmed) {
-          fetchstate()
-        }
-      })
-    })
-    .catch((e: any) => {
-      Swal.fire('Error', e.response.data.message, 'error')
-    })
-    .finally(() => {
-      state.pandawaModal = false
-    })
+  // Remove all non-digit characters first
+  const cleanPhone = phone.replace(/\D/g, '');
+
+  // Handle different formats
+  if (cleanPhone.startsWith('628')) {
+    // Already in 628 format, just add +
+    return '+' + cleanPhone;
+  } else if (cleanPhone.startsWith('62')) {
+    // 62 format, just add +
+    return '+' + cleanPhone;
+  } else if (cleanPhone.startsWith('08')) {
+    // 08 format, replace 0 with +62
+    return '+62' + cleanPhone.substring(1);
+  } else if (cleanPhone.startsWith('8')) {
+    // 8 format, add +62
+    return '+62' + cleanPhone;
+  }
+
+  return phone; // Return original if no pattern matches
 }
 
-function fixPrivilege() {
+const onSubmit = handleSubmit((values) => {
+  let form = values
+  if (values.phone) {
+    form.phone = formatPhoneToInternational(String(values.phone));
+  }
   userService
-    .fixPrivilege(Number(router.params.id))
-    .then((res) => responseHelper('success', res))
-    .catch((e) => responseHelper('error', e))
+    .update(String(state.userId), form, () => {
+      resetForm()
+      fetchstate()
+      state.checked = false
+      state.profileModal = !state.profileModal
+    }, {
+      allowOutsideClick: false,
+      allowEscapeKey: false
+    })
+})
+
+function toggleProfileModal() {
+  setValues({
+    firstname: state.user.firstname,
+    lastname: state.user.lastname,
+    username: state.user.username,
+    email: state.user.email,
+    phone: state.user.phone,
+    role: state.user.role,
+    isActive: state.user.isActive
+  })
+  state.checked = false
+  state.profileModal = !state.profileModal
+}
+
+function deleteUser() {
+  Swal.fire({
+    title: 'Are you sure?',
+    text: "You won't be able to revert this!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Yes, delete it!'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      userService.destroy(String(state.userId), () => {
+        route.push({ name: 'user.index' })
+      })
+    }
+  })
 }
 
 const avatar = (avatar: string | null) => getAvatar(avatar)
@@ -204,9 +196,8 @@ onMounted(() => {
         <!--end col-->
         <div class="col">
           <div class="p-2">
-            <h3 class="text-white mb-1">{{ state.user.name }}</h3>
-
-            <div class="hstack text-white-50 gap-1">{{ state.user.name }}</div>
+            <h3 class="text-white mb-1">{{ state.user.fullname }}</h3>
+            <div class="hstack text-white-50 gap-1">{{ state.user.firstname }}</div>
           </div>
         </div>
         <!--end col-->
@@ -219,21 +210,23 @@ onMounted(() => {
           <i class="las la-user"></i>
         </template>
         <template #cardButton>
-          <div class="btn-group" v-if="checkRole('user.users', 'update', true, state.user?.role?.id)">
+          <div class="btn-group"
+            v-if="checkRole('user.users', 'update', true, state.user?.role) || checkOwner(String(state.userId))">
             <button type="button" class="btn btn-sm btn-primary m-1" @click="toggleProfileModal">
               <i class="ri-user-settings-line align-bottom me-1"></i>
               Edit Profile
             </button>
+            <button v-if="checkRole('user.users', 'update', true, state.user?.role)" type="button"
+              class="btn btn-sm btn-danger m-1" @click="deleteUser">
+              <i class="ri-delete-bin-5-line align-bottom me-1"></i>
+              Delete User
+            </button>
 
-            <router-link :to="{ name: 'user.privileges', params: { id: state.userId } }"
+            <!-- <router-link :to="{ name: 'user.privileges', params: { id: state.userId } }"
               class="btn btn-sm btn-success m-1">
               <i class="ri-shield-user-line align-bottom me-1"></i>
               Edit Privileges
-            </router-link>
-            <button class="btn btn-sm btn-info m-1" @click="fixPrivilege()">
-              <i class="bx bx-wrench align-middle me-1"></i>
-              Fix Privilege
-            </button>
+            </router-link> -->
           </div>
         </template>
         <template #cardBody>
@@ -242,16 +235,16 @@ onMounted(() => {
               <span class="text-muted text-uppercase fs-11">Name</span>
               <div class="fs-12 fw-semibold border-bottom pb-2 mb-3 text-uppercase">
                 <i class="las la-braille me-1 text-info"></i>
-                <strong>{{ state.user?.name }}</strong>
+                <strong>{{ state.user?.fullname }}</strong>
               </div>
             </div>
             <!--End Col-->
 
             <div class="col-md-4">
-              <span class="text-muted text-uppercase fs-11">Pandawa User Role</span>
+              <span class="text-muted text-uppercase fs-11">User Role</span>
               <div class="fs-12 border-bottom pb-2 mb-3 text-uppercase">
                 <i class="las la-braille me-1 text-info"></i>
-                {{ state.user?.role?.name }}
+                {{ state.user?.role }}
               </div>
             </div>
             <!--End Col-->
@@ -260,9 +253,9 @@ onMounted(() => {
               <span class="text-muted text-uppercase fs-11">Status</span>
               <div class="border-bottom pb-2 mb-3 text-uppercase">
                 <i class="las la-braille me-1 text-info"></i>
-                <span v-if="state.user?.status == 1"
+                <span v-if="state.user?.isActive == true"
                   class="bg-success-subtle text-success rounded p-1 fs-10">Active</span>
-                <span v-else-if="state.user?.status == 0"
+                <span v-else-if="state.user?.isActive == false"
                   class="bg-danger-subtle text-danger rounded p-1 fs-10">Suspended</span>
                 <span v-else class="bg-success-subtle text-success rounded p-1 fs-10">Suspended</span>
               </div>
@@ -270,16 +263,7 @@ onMounted(() => {
             <!--End Col-->
           </div>
 
-          <div class="row" v-if="state.user?.employee">
-            <div class="col-md-4">
-              <span class="text-muted text-uppercase fs-11">NIP</span>
-              <div class="fs-11 border-bottom pb-2 mb-3 text-uppercase">
-                <i class="las la-braille me-1 text-info"></i>
-                <span v-if="!state.user?.employee?.nip" class="rounded p-1 bg-danger-subtle text-danger">NIP masih
-                  kosong, hubungi Human Capital</span>
-                {{ state.user?.employee?.nip }}
-              </div>
-            </div>
+          <div class="row">
             <!--End Col -->
             <div class="col-md-4">
               <span class="text-muted text-uppercase fs-11">Email</span>
@@ -288,12 +272,20 @@ onMounted(() => {
                 {{ state.user?.email }}
               </div>
             </div>
-            <!--End Col-->
+            <!--End Col -->
             <div class="col-md-4">
-              <span class="text-muted text-uppercase fs-11">Last Login</span>
+              <span class="text-muted text-uppercase fs-11">Phone</span>
               <div class="fs-12 border-bottom pb-2 mb-3 text-uppercase">
                 <i class="las la-braille me-1 text-info"></i>
-                {{ state.user?.last_login }}
+                {{ state.user?.phone }}
+              </div>
+            </div>
+            <!--End Col-->
+            <div class="col-md-4">
+              <span class="text-muted text-uppercase fs-11">Updated At</span>
+              <div class="fs-12 border-bottom pb-2 mb-3 text-uppercase">
+                <i class="las la-braille me-1 text-info"></i>
+                {{ state.user?.updatedAt }}
               </div>
             </div>
             <!--End Col-->
@@ -312,7 +304,7 @@ onMounted(() => {
                       </router-link>
                     </li>
                     <li class="breadcrumb-item active hide-xs" aria-current="page">
-                      {{ state.user?.name }}
+                      {{ state.user?.fullname }}
                     </li>
                   </ol>
                 </nav>
@@ -325,21 +317,42 @@ onMounted(() => {
     </div>
     <ModalBasic title="Update Profile" :modelValue="state.profileModal" @toggle="state.profileModal = $event">
       <template #modalBody>
-        <form id="update_profile_form" @submit.prevent="onSubmit">
+        <form id="update_profile_form" @submit.prevent="onSubmit" class="needs-validation" novalidate>
           <div class="row g-3">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="firstName" class="form-label">First Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" :class="{ 'is-invalid': errors.firstName }" id="firstName"
+                  placeholder="Enter first name" v-model="state.userProfileFormField.firstname[0].value">
+                <div v-if="errors.firstName" class="invalid-feedback">
+                  {{ errors.firstName }}
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="lastName" class="form-label">Last Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" :class="{ 'is-invalid': errors.lastName }" id="lastName"
+                  placeholder="Enter last name" v-model="state.userProfileFormField.lastname[0].value">
+                <div v-if="errors.lastName" class="invalid-feedback">
+                  {{ errors.lastName }}
+                </div>
+              </div>
+            </div>
+            <div v-for="input in state.inputProfile" :key="input.name" class="col-md-12">
+              <BasicInput :label="input.label" :type="input.inputType" :name="input.name" :placeholder="input.label"
+                v-model="(state.userProfileFormField as any)[input.name][0].value"
+                :required="input.required ? true : false" />
+            </div>
             <div class="col-md-12">
               <label for="role_select">Role</label>
-              <MultiSelect id="role_select" placeholder="Select Roles" v-model="state.userProfileFormField.role"
-                :options="state.editParams.role" :required="true" />
-            </div>
-            <div v-for="input in state.inputProfile" :key="input.id" class="col-md-12">
-              <BasicInput :label="input.label" :type="input.inputType" :name="input.name" :placeholder="input.label"
-                v-model="state.userProfileFormField[input.name]" :required="input.required ? true : false" disabled />
+              <MultiSelect id="role_select" placeholder="Select Roles"
+                v-model="state.userProfileFormField.role[0].value" :options="state.editParams.role" :required="true" />
             </div>
             <div class="col-md-12">
-              <label for="auth_select">Auth</label>
-              <MultiSelect id="auth_select" v-model="state.userProfileFormField.status" placeholder="Auth Status"
-                :options="state.editParams.status" />
+              <label for="auth_select">Status</label>
+              <Multiselect id="auth_select" v-model="state.userProfileFormField.isActive[0].value"
+                placeholder="User Status" :options="state.editParams.status" />
             </div>
           </div>
         </form>
@@ -359,46 +372,6 @@ onMounted(() => {
                 :class="!state.checked ? 'disabled' : ''">
                 Update
               </button>
-            </div>
-          </div>
-        </div>
-      </template>
-    </ModalBasic>
-
-    <ModalBasic title="Fix Pandawa state" :modelValue="state.pandawaModal" @toggle="state.pandawaModal = $event">
-      <template #modalBody>
-        <form id="pandawaForm" @submit.prevent="(e) => fixPandawa(e)">
-          <div class="form-group">
-            <label class="form-label" for="pandawa_nip">Pandawa NIP</label>
-            <input type="text" id="pandawa_nip" name="pandawa_nip" placeholder="NIP karyawan genah" class="form-control"
-              required />
-          </div>
-          <div class="col-md-12 mt-2">
-            <blockquote class="blockquote custom-blockquote blockquote-outline blockquote-warning rounded mb-0">
-              <p class="text-dark mb-2">Note:</p>
-              <footer class="blockquote-footer mt-0 mb-1 text-danger">
-                Pastikan staff sudah mempunyai NIP di yudhistira.
-              </footer>
-            </blockquote>
-          </div>
-        </form>
-      </template>
-      <template #modalFooter>
-        <div class="col">
-          <div class="row">
-            <div class="col col-lg-5 mt-4">
-              <input v-model="state.checked" type="checkbox" id="checkboxEditProfile" style="margin-right: 4px" />
-              <label for="checkboxEditProfile">Confirm</label>
-            </div>
-            <div class="col col-lg-7 hstack justify-content-end">
-              <button style="margin-right: 1em" type="button" class="btn btn-light" @click="state.pandawaModal = false">
-                Close
-              </button>
-              <button form="pandawaForm" type="submit" variant="primary" class="btn btn-primary"
-                :class="!state.checked ? 'disabled' : ''">
-                Update
-              </button>
-              <!-- </div> -->
             </div>
           </div>
         </div>

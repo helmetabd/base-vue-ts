@@ -3,7 +3,7 @@ import router from '../router'
 import { format } from '@redtea/format-axios-error'
 import { useAuthStore } from '@/stores/auth'
 import Swal from 'sweetalert2'
-import type { Dashboard, ResponseUtils } from '@/interfaces/Utils'
+import type { Dashboard, ResponseRaw, ResponseUtils } from '@/interfaces/Utils'
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_APP_BACKEND_URL,
@@ -14,8 +14,8 @@ const apiClient = axios.create({
   }
 })
 
-function isResponseUtils(obj: any): obj is ResponseUtils {
-  return obj && obj.meta && obj.meta.current_page !== undefined && obj.links !== undefined
+function isResponseUtils(obj: any): obj is ResponseRaw {
+  return obj && obj.data && obj.data?.pagination?.currentPage !== undefined && obj.data?.links !== undefined
 }
 
 function isDashboard(obj: any): obj is Dashboard {
@@ -37,7 +37,7 @@ apiClient.interceptors.response.use(
   (response) => {
     const responseData = response.data
     if (isResponseUtils(responseData)) {
-      return responseData as ResponseUtils // Return as ResponseUtils if it matches
+      return responseData.data as ResponseUtils // Return as ResponseUtils if it matches
     } else if (isDashboard(responseData)) {
       return responseData as Dashboard // Return the raw Axios data if it doesn't match
     } else {
@@ -50,10 +50,12 @@ apiClient.interceptors.response.use(
     }
 
     const status = error.response?.status
+    console.log('Error status:', status)
+    console.log('Error response:', error.response)
 
     if (status === 401) {
       localStorage.clear()
-      Swal.fire(
+      return Swal.fire(
         'Session invalid',
         'Sesi anda telah berahir / Anda login di perangkat lain!',
         'error'
@@ -62,11 +64,10 @@ apiClient.interceptors.response.use(
           router.push('/auth/login')
         }
       })
-      return false // Stop promise chain like the second snippet
     }
 
     if (status === 403) {
-      Swal.fire(
+      return Swal.fire(
         'Back off!!!',
         "Seems like you don't have permit to access this module!",
         'error'
@@ -75,16 +76,14 @@ apiClient.interceptors.response.use(
           router.push({ name: 'dashboard' })
         }
       })
-      return false // Stop promise chain like the second snippet
     }
 
     if (status === 406) {
-      Swal.fire('Not Acceptable', error.response?.data?.message, 'error').then((e) => {
+      return Swal.fire('Not Acceptable', error.response?.data?.message, 'error').then((e) => {
         if (e.isConfirmed) {
           router.push('/auth/login')
         }
       })
-      return false // Stop promise chain like the second snippet
     }
 
     // if (status === 409) {

@@ -11,6 +11,7 @@ defineProps<{
   code?: string
   customCode?: string
   labelClass?: string
+  errors?: string
 }>()
 
 // Define the emits for updating modelValue
@@ -37,5 +38,6 @@ const handleInput = (event: Event) => {
       :rows="rows" @input="handleInput" v-bind="$attrs" />
     <input v-else class="form-control p-2" :type="type" :value="modelValue" :placeholder="placeholder"
       :required="required ?? false" @input="handleInput" v-bind="$attrs" />
+    <span class="text-danger" v-if="errors">{{ errors }}</span>
   </div>
 </template>

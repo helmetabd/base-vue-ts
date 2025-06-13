@@ -12,8 +12,8 @@ const data = reactive({
   flag: null,
   search: '',
   myVar: 1,
-  display_name: authStore.role.display_name,
-  name: authStore.user.name,
+  display_name: authStore.role,
+  name: authStore.user.fullname,
   avatar: getAvatar(authStore.user.avatar),
   options: []
 })
@@ -102,7 +102,7 @@ function initFullScreen() {
                 <img src="@/assets/images/arjuna-sm.png" alt="" height="22" />
               </span>
               <span class="logo-lg">
-                <img src="@/assets/images/logo-dark.png" alt="" height="17" />
+                <img src="@/assets/images/logo-light.png" alt="" height="17" />
               </span>
             </router-link>
 
@@ -111,7 +111,7 @@ function initFullScreen() {
                 <img src="@/assets/images/arjuna-sm.png" alt="" height="22" />
               </span>
               <span class="logo-lg">
-                <img src="@/assets/images/logo-light.png" alt="" height="17" />
+                <img src="@/assets/images/logo-light.png" alt="" height="40" />
               </span>
             </router-link>
           </div>

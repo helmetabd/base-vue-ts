@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<!-- <script setup lang="ts">
 import type { Dashboard, Option, SpecialDashboard } from '@/interfaces/Utils';
 import { reactive, watch } from 'vue';
 import TurnOverRateCard from '@/components/chart-widgets/TurnOverRateCard.vue';
@@ -284,9 +284,6 @@ watch(
         <div class="col-xl-4 col-md-12">
             <div class="row h-100 dashboard-padding" v-if="state.dashboard.group_populate">
                 <div class="card card-animate">
-                    <!-- <div class="card-header">
-                            Employee Active by Department
-                        </div> -->
                     <h5 class="text-start fw-semibold mt-4 ms-4 mb-0">Employee Active by Department</h5>
                     <div class="card-body align-content-center">
                         <EducationLevel :key="state.renderKey" :data="state.dashboard.group_populate" />
@@ -297,9 +294,6 @@ watch(
         <div class="col-xl-4 col-md-12">
             <div class="row h-100 dashboard-padding" v-if="state.dashboard.position_populate">
                 <div class="card card-animate">
-                    <!-- <div class="card-header">
-                            Position Populated
-                        </div> -->
                     <h5 class="text-start fw-semibold mt-4 ms-4 mb-0">Employee Active by Position</h5>
                     <div class="card-body align-content-center">
                         <EducationLevel :key="state.renderKey" :data="state.dashboard.position_populate" />
@@ -312,9 +306,6 @@ watch(
         <div class="col-xl-8 col-md-12" v-if="state.dashboard.growth_against_resign">
             <div class="row h-100 dashboard-padding">
                 <div class="card card-animate">
-                    <!-- <div class="card-header">
-                            Growth Against Resign
-                        </div> -->
                     <h5 class="text-start fw-semibold mt-4 ms-4 mb-0">Growth Against Resign Annually</h5>
                     <div class="card-body align-content-center">
                         <GrowthAgainstResign :key="state.renderKey" :data="state.dashboard.growth_against_resign" />
@@ -325,9 +316,6 @@ watch(
         <div class="col-xl-4 col-md-12" v-if="state.dashboard.annual_growth">
             <div class="row h-100 dashboard-padding">
                 <div class="card card-animate">
-                    <!-- <div class="card-header">
-                            Annual Growth
-                        </div> -->
                     <h5 class="text-start fw-semibold mt-4 ms-4 mb-0">Annual Growth</h5>
                     <div class="card-body align-content-center">
                         <AnualGrowth :key="state.renderKey" :data="state.dashboard.annual_growth"
@@ -343,4 +331,4 @@ watch(
     opacity: .05;
     fill: var(--vz-success)
 }
-</style>
+</style> -->

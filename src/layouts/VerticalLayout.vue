@@ -114,7 +114,7 @@ onUnmounted(() => {
               <img src="@/assets/images/arjuna-sm.png" alt="" height="22" />
             </span>
             <span class="logo-lg">
-              <img src="@/assets/images/logo-dark.png" alt="" height="17" />
+              <img src="@/assets/images/logo-light.png" alt="" height="40" />
             </span>
           </router-link>
           <!-- Light Logo-->
@@ -123,7 +123,7 @@ onUnmounted(() => {
               <img src="@/assets/images/arjuna-sm.png" alt="" height="22" />
             </span>
             <span class="logo-lg">
-              <img src="@/assets/images/logo-light.png" alt="" height="17" />
+              <img src="@/assets/images/logo-light.png" alt="" height="40" />
             </span>
           </router-link>
           <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover"
@@ -154,6 +154,6 @@ onUnmounted(() => {
       </div>
       <PageFooter />
     </div>
-    <RightBar hidden />
+    <RightBar />
   </div>
 </template>
