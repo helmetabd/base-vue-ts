@@ -25,7 +25,7 @@ export const useLayoutStore = defineStore('layout', {
       mode: 'light',
       position: 'fixed',
       sidebarView: 'default',
-      sidebarColor: 'dark',
+      sidebarColor: 'light',
       sidebarImage: 'none',
       preloader: 'disable',
       visibility: 'show'

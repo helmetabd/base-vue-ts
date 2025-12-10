@@ -11,7 +11,6 @@ const props = defineProps({
   },
   size: {
     type: String,
-    required: false
   },
   modelValue: {
     type: Boolean,
@@ -86,8 +85,9 @@ const closeModal = () => {
 </script>
 
 <template>
-  <div v-if="isVisible" class="modal fade show v-modal-custom fadeInDown" :class="{ 'modal-xl': props.size === 'xl' }"
-    tabindex="-1" @click="closeModal" style="display: block" data-bs-keyboard="false" data-bs-backdrop="static">
+  <div v-if="isVisible" class="modal fade show v-modal-custom fadeInDown"
+    :class="props.size ? 'modal-' + props.size : ''" tabindex="-1" @click="closeModal" style="display: block"
+    data-bs-keyboard="false" data-bs-backdrop="static">
     <div class="modal-dialog" :class="center ? 'modal-dialog-centered' : ''" @click.stop>
       <div class="d-flex w-100">
         <div class="modal-content"

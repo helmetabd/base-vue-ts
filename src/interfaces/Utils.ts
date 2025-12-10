@@ -2,17 +2,24 @@ import type { Modules, Permission } from './User'
 
 export interface Option {
   label: string | number
-  value: number | string | boolean
-  department?: number
+  value: number
+  color?: string
+  parent_category?: string
+}
+export interface GroupOption {
+  label: string
+  options: Option[]
+}
+export interface EditResponse<T, K> {
+  data: T
+  params: Record<string, K>
 }
 export interface FormField {
-  [key: string]: string | number | boolean | null | undefined | string[]
+  [key: string]: string | number | null | undefined | string[]
 }
-
 export interface SpecialDashboard {
   [key: string]: string | number | undefined | string[]
 }
-
 export interface Simple {
   id: number
   name: string
@@ -20,18 +27,32 @@ export interface Simple {
 export interface links {
   url: string | null
   label: string
-  isActive: boolean
-}
-export interface ResponseRaw {
-  data: ResponseUtils,
-  status: string,
-  message: string,
-  code: number
+  active: boolean
 }
 export interface ResponseUtils {
-  items: any[]
-  pagination: PaginationRaw
-  links: links[]
+  data: any[]
+  meta: {
+    current_page: number
+    from: number
+    last_page: number
+    links: links[]
+    path: string
+    per_page: number
+    to: number
+    total: number
+  }
+  links: {
+    first: string
+    last: string
+    prev: string | null
+    next: string | null
+  }
+}
+export interface ResponseRaw {
+  data: ResponseUtils
+  status: string
+  message: string
+  code: number
 }
 export interface PaginationRaw {
   currentPage: number
@@ -54,7 +75,6 @@ export interface PaginationType {
   nextPageUrl: string | null
   prevPageUrl: string | null
 }
-
 export interface Param {
   search?: string
   status?: string
@@ -67,13 +87,11 @@ export interface Param {
   level?: string
   data?: string
 }
-
 interface Series {
   name: string
   type?: string
   data: number[]
 }
-
 export interface Dashboard {
   total_employees: {
     total: number
@@ -140,7 +158,6 @@ export interface Dashboard {
     months: Option[]
   }
 }
-
 export interface Privilage {
   data: {
     id: number
@@ -157,14 +174,50 @@ export interface Privilage {
   }
 }
 export interface Menu {
-  name: string;
-  display_name: string;
-  icon: string | null;
-  route: string | null;
-  module: string;
-  auth_level_min: number;
-  admin_required: boolean;
-  caret: boolean;
-  childs?: Menu[];
-  type?: string;
+  name: string
+  display_name: string
+  icon: string | null
+  route: string | null
+  module: string
+  auth_level_min: number
+  admin_required: boolean
+  caret: boolean
+  childs?: Menu[]
+  type?: string
+}
+export interface Column {
+  name: string
+  label: string
+  sortable: boolean
+  checkable?: boolean
+  textTypes?: any
+  hidden?: boolean
+  width?: string
+  bold?: boolean
+  headerClass?: string
+  routeName?: string
+  class?: string
+  isNumber?: boolean
+  targetCollapsed?: boolean
+  currency?: string
+  fixedNumber?: number
+  style?: { [key: string]: string }
+  percentage?: { target: string; actual: string }
+  custom?: any
+  badge?: any
+  dateConfig?: any
+  offcanvas?: any
+  stackedImage?: boolean
+  isArray?: boolean
+  isFirst?: boolean
+  isLast?: boolean
+  defaultValue?: any
+  display?: string
+  customizeRow?: boolean
+  customizeHeader?: boolean
+  truncate?: boolean
+  link?: boolean
+  params?: { id: string; date: any }
+  isIndex?: boolean
+  startIndex?: number
 }

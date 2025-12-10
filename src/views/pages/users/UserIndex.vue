@@ -1,65 +1,30 @@
 <script setup lang="ts">
 import Layout from '@/layouts/MainLayout.vue'
-import { reactive, watch } from 'vue'
-import * as yup from "yup"
+import { reactive } from 'vue'
 import BasicInput from '@/components/inputs/BasicInput.vue'
 import BaseCard from '@/components/cards/base-card.vue'
-import Multiselect from '@vueform/multiselect';
-import '@vueform/multiselect/themes/default.css'
+import Swal from 'sweetalert2'
+import { useForm, useField } from 'vee-validate'
+import * as yup from 'yup'
 import checkRole from '../../../utils/adminActionButton'
 import { userService } from '@/service'
 import ModalBasic from '@/components/modals/ModalBasic.vue'
+import { errorHelper } from '../../..//utils/alertHelper'
 import type { FormField, Option, Param } from '@/interfaces/Utils'
-import { useRoute } from 'vue-router'
 import DatatableServer from '@/components/datatables/DatatableServer.vue'
-import { useForm } from 'vee-validate'
-
-const route = useRoute()
-
-const schema = yup.object().shape({
-  firstname: yup.string().required('First name is required'),
-  lastname: yup.string().required('Last name is required'),
-  username: yup.string().required('Username is required'),
-  email: yup.string().email('Invalid email').required('Email is required'),
-  password: yup.string().min(8, 'Password must be at least 8 characters').required('Password is required'), // Fixed error message
-  phone: yup.string()
-    .required('Phone number is required')
-    .test('indonesian-phone', 'Please enter a valid Indonesian phone number (e.g., 08123456789, 628123456789, or +628123456789)',
-      function (value) {
-        if (!value) return false;
-        return /^(?:\+62|62|0)8[1-9][0-9]{7,10}$/.test(value);
-      }
-    ),
-  role: yup.string().required('Role is required')
-})
-
-const { handleSubmit, resetForm, meta, defineField, errors } = useForm({
-  validationSchema: schema,
-  initialValues: {} as FormField
-});
 
 const state = reactive({
   url: '/users',
   checked: false,
   modalAdd: false,
-  userForm: {
-    firstname: defineField('firstname'),
-    lastname: defineField('lastname'),
-    username: defineField('username'),
-    email: defineField('email'),
-    password: defineField('password'),
-    phone: defineField('phone'),
-    role: defineField('role')
-  },
+  userForm: {} as FormField,
   options: {
-    role: [
-      { value: 'STAKEHOLDER', label: 'Stake Holder' },
-      { value: 'USER', label: 'User' }
-    ] as Option[]
+    role: {} as Option,
+    status: [] as Option[]
   },
   tableData: {
-    'sort-by': 'id',
-    'sort-method': 'asc'
+    order_by: 'id',
+    sort: 'asc'
   } as Param,
   componentKey: 0,
   columns: [
@@ -67,7 +32,7 @@ const state = reactive({
     {
       hidden: false,
       label: 'Name',
-      name: 'fullname',
+      name: 'name',
       class: 'text-start',
       bold: true,
       custom: {
@@ -80,12 +45,20 @@ const state = reactive({
     },
     {
       hidden: false,
+      label: 'Nickname',
+      name: 'nickname',
+      sortable: true
+    },
+    {
+      hidden: false,
       label: 'Auth/Role',
-      name: 'role',
+      name: 'role_id',
+      display: 'role.id',
       badge: {
         types: [
-          { value: 'USER', type: 'primary', label: 'User' },
-          { value: 'STAKEHOLDER', type: 'warning', label: 'Stack Holder' }
+          { value: 1, type: 'danger', label: 'Super Admin' },
+          { value: 2, type: 'primary', label: 'Admin' },
+          { value: 3, type: 'warning', label: 'User' }
         ]
       },
       sortable: true
@@ -93,11 +66,11 @@ const state = reactive({
     {
       hidden: false,
       label: 'Status',
-      name: 'isActive',
+      name: 'status',
       badge: {
         types: [
-          { value: true, type: 'success', label: 'Active' },
-          { value: false, type: 'danger', label: 'Suspended' }
+          { value: 1, type: 'success', label: 'Active' },
+          { value: 0, type: 'danger', label: 'Suspended' }
         ]
       },
       sortable: true
@@ -119,115 +92,61 @@ const state = reactive({
     },
     {
       hidden: false,
-      label: 'Created At',
-      name: 'createdAt',
+      label: 'Last Login',
+      name: 'last_login',
       custom: {
         icon: 'ri-time-line me-1 text-muted'
       },
       sortable: false
     }
   ],
-  submit: false,
-  inputFields: [
-    {
-      label: 'First Name',
-      name: 'firstname',
-      inputType: 'text',
-      modelValue: '',
-      required: true
-    },
-    {
-      label: 'Last Name',
-      name: 'lastname',
-      inputType: 'text',
-      modelValue: '',
-      required: true
-    },
-    {
-      label: 'Username',
-      name: 'username',
-      inputType: 'text',
-      modelValue: '',
-      required: true
-    },
-    {
-      label: 'Email',
-      name: 'email',
-      inputType: 'email',
-      modelValue: '',
-      required: true
-    },
-    {
-      label: 'Password',
-      name: 'password',
-      inputType: 'password',
-      modelValue: '',
-      required: true
-    },
-    {
-      label: 'Phone',
-      name: 'phone',
-      inputType: 'tel', // Changed from 'phone' to 'tel' for better HTML semantics
-      modelValue: '',
-      required: true,
-      placeholder: 'e.g., 08123456789 or +628123456789'
-    },
-  ]
+  inputFields: []
 })
 
-// Renamed function to better reflect its purpose
-function updateTableParams() {
-  let query = route.query
-  if (Object.keys(query).length > 0) {
-    state.tableData = { ...state.tableData, ...query }
+// Add user form schema
+const schema = yup.object({
+  name: yup.string().required('Name is required'),
+  nickname: yup.string().nullable(),
+  email: yup.string().email('Invalid email').required('Email is required'),
+  password: yup.string().min(8, 'Password must be at least 8 characters').required('Password is required'), // Fixed error message
+  phone: yup.string()
+    .required('Phone number is required')
+    .test('indonesian-phone', 'Please enter a valid Indonesian phone number (e.g., 08123456789, 628123456789, or +628123456789)',
+      function (value) {
+        if (!value) return false;
+        return /^(?:\+62|62|0)8[1-9][0-9]{7,10}$/.test(value);
+      }
+    ),
+  role: yup.string().required('Role is required')
+})
+
+const { handleSubmit, errors, resetForm } = useForm({ validationSchema: schema })
+const { value: name } = useField<string>('name')
+const { value: nickname } = useField<string | null>('nickname')
+const { value: password } = useField<string>('password')
+const { value: email } = useField<string>('email')
+const { value: phone } = useField<string | null>('phone')
+const { value: roleField } = useField<number | null>('role')
+
+const submitAdd = handleSubmit(async (values) => {
+  try {
+    values = { ...values, status: 1 }
+    await userService.store(values)
+    Swal.fire({ icon: 'success', text: 'User created', title: 'Success' }).then((e) => {
+      if (e.isConfirmed) {
+        forceRender()
+        state.modalAdd = false
+      }
+    })
+    resetForm()
+  } catch (e: any) {
+    errorHelper(e)
   }
-}
-
-// Function to format phone number to +62 format
-function formatPhoneToInternational(phone: string): string {
-  if (!phone) return phone;
-
-  // Remove all non-digit characters first
-  const cleanPhone = phone.replace(/\D/g, '');
-
-  // Handle different formats
-  if (cleanPhone.startsWith('628')) {
-    // Already in 628 format, just add +
-    return '+' + cleanPhone;
-  } else if (cleanPhone.startsWith('62')) {
-    // 62 format, just add +
-    return '+' + cleanPhone;
-  } else if (cleanPhone.startsWith('08')) {
-    // 08 format, replace 0 with +62
-    return '+62' + cleanPhone.substring(1);
-  } else if (cleanPhone.startsWith('8')) {
-    // 8 format, add +62
-    return '+62' + cleanPhone;
-  }
-
-  return phone; // Return original if no pattern matches
-}
-
-// Use handleSubmit from vee-validate for better form handling
-const onSubmit = handleSubmit((values) => {
-  // Format phone number before submission
-  let form = values
-  if (values.phone) {
-    form.phone = formatPhoneToInternational(String(values.phone));
-  }
-  userService.store(form, () => {
-    forceRender()
-    closeModalAndReset()
-    state.submit = true
-  }, {
-    allowOutsideClick: false,
-    allowEscapeKey: false
-  })
 })
 
 function toggleHeader(header: string) {
   const index = state.columns.findIndex((col) => col.label === header)
-  if (index !== -1) {
+  if (index !== -1 && state.columns[index]) {
     state.columns[index].hidden = !state.columns[index].hidden
   }
 }
@@ -236,25 +155,12 @@ function forceRender() {
   state.componentKey++
 }
 
-// Extracted common reset logic
-function closeModalAndReset() {
-  state.modalAdd = false
-  resetForm()
-  state.checked = false
-}
-
-async function openAddModal() {
+async function clear() {
   state.modalAdd = true
-  resetForm()
+  state.options = await userService.create()
+  state.userForm = {}
   state.checked = false
 }
-
-watch(() => route.query, (newValue, oldValue) => {
-  if (newValue !== oldValue) {
-    state.tableData = { ...state.tableData, ...newValue as Param }
-    updateTableParams()
-  }
-}, { immediate: true, deep: true })
 </script>
 
 <template>
@@ -270,15 +176,15 @@ watch(() => route.query, (newValue, oldValue) => {
               aria-haspopup="true" aria-expanded="false">
               <i class="las la-columns"></i> <span class="hide-xs">Column</span>
             </button>
-            <div class="dropdown-menu p-3 pb-1 fs-11 text-uppercase" id="showHideColumn">
+            <div class="dropdown-menu p-3 pb-1 fs-11 text-uppercase" id="showHideColumn" style="">
               <div class="form-check form-check-success mb-1 dropdown-item" v-for="(toggle, index) in state.columns"
-                :key="`column-${index}`">
+                :key="index">
                 <input class="form-check-input toggle-vis" type="checkbox" :checked="!toggle.hidden"
                   @change="toggleHeader(toggle.label)" />
                 {{ toggle.label }}
               </div>
             </div>
-            <button class="btn btn-primary btn-sm m-1" @click="openAddModal" type="button"
+            <button class="btn btn-primary btn-sm m-1" @click="clear" type="button"
               v-if="checkRole('user.users', 'create')">
               <i class="ri-add-circle-line align-bottom me-1"></i>Add User
             </button>
@@ -290,38 +196,63 @@ watch(() => route.query, (newValue, oldValue) => {
         </template>
       </BaseCard>
     </div>
-
-    <ModalBasic :modelValue="state.modalAdd" :title="'Create User'" @toggle="state.modalAdd = $event">
+    <ModalBasic :modelValue="state.modalAdd" :title="'Create User'" @toggle="state.modalAdd = $event" size="lg">
       <template #modalBody>
-        <form @submit.prevent="onSubmit">
+        <form @submit.prevent="submitAdd" id="add_user_form">
           <div class="row g-3">
-            <div v-for="input in state.inputFields" :key="input.name" class="col-xxl-12">
-              <BasicInput :label="input.label" :type="input.inputType" :name="input.name"
-                :placeholder="input.placeholder || input.label" :required="input.required"
-                v-model="(state.userForm as any)[input.name][0].value" :errors="errors[input.name]" />
+            <div class="col-xxl-6 border-bottom pb-3">
+              <BasicInput label="Name" type="text" name="name" placeholder="Name" v-model="name" :required="true" />
+              <div v-if="errors.name" class="text-danger small mt-1">{{ errors.name }}</div>
             </div>
-            <div class="col-12">
-              <label class="mt-2 mb-2">Select Role</label>
-              <Multiselect v-model="state.userForm.role[0].value" :options="state.options.role"
-                placeholder="Select Role" />
-              <span v-if="errors.role" class="text-danger">{{ errors.role }}</span>
+
+            <div class="col-xxl-6 border-bottom pb-3">
+              <BasicInput label="Phone" type="text" name="phone" placeholder="Phone" v-model="phone" :required="true" />
+              <div v-if="errors.phone" class="text-danger small mt-1">{{ errors.phone }}</div>
             </div>
-            <div class="col-5">
-              <input type="checkbox" id="checkbox" style="margin-right: 4px" v-model="state.checked" />
-              <label for="checkbox">Confirm</label>
+
+            <div class="col-xxl-6 border-bottom pb-3">
+              <BasicInput label="Email" type="email" name="email" placeholder="Email" v-model="email"
+                :required="true" />
+              <div v-if="errors.email" class="text-danger small mt-1">{{ errors.email }}</div>
             </div>
-            <div class="col-7">
-              <div class="hstack gap-2 justify-content-end">
-                <button type="button" class="btn btn-light" @click="closeModalAndReset">
-                  Close
-                </button>
-                <button :disabled="!state.checked" type="submit" class="btn btn-primary">
-                  Submit
-                </button>
-              </div>
+
+            <div class="col-xxl-6 border-bottom pb-3">
+              <BasicInput label="Password" type="password" name="password" placeholder="Password" v-model="password"
+                :required="true" />
+              <div v-if="errors.password" class="text-danger small mt-1">{{ errors.password }}</div>
+            </div>
+
+            <div class="col-xxl-6 border-bottom pb-3">
+              <BasicInput label="Nickname" type="text" name="nickname" placeholder="Nickname" v-model="nickname" />
+              <div v-if="errors.nickname" class="text-danger small mt-1">{{ errors.nickname }}</div>
+            </div>
+
+            <div class="col-xxl-6 border-bottom pb-3">
+              <label><i class="las la-braille text-muted"></i>Select Role</label>
+              <MultiSelect v-model="roleField" :options="state.options.role" placeholder="Select Role" />
+              <div v-if="errors.role" class="text-danger small mt-1">{{ errors.role }}</div>
             </div>
           </div>
         </form>
+      </template>
+      <template #modalFooter>
+        <div class="col">
+          <div class="row">
+            <div class="col col-lg-5 mt-4">
+              <input v-model="state.checked" type="checkbox" id="checkboxEditProfile" style="margin-right: 4px" />
+              <label for="checkboxEditProfile">Confirm</label>
+            </div>
+            <div class="col col-lg-7 hstack justify-content-end">
+              <button style="margin-right: 1em" type="button" class="btn btn-light" @click="state.modalAdd = false">
+                Close
+              </button>
+              <button form="add_user_form" type="submit" variant="primary" class="btn btn-primary"
+                :class="!state.checked ? 'disabled' : ''">
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
       </template>
     </ModalBasic>
   </Layout>

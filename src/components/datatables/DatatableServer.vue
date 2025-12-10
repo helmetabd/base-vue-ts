@@ -9,54 +9,22 @@ import type { MomentInput } from 'moment'
 import moment from 'moment'
 import PercentageBadge from '../partials/percentage-badge.vue'
 import StackedAvatar from '../utils/StackedAvatar.vue'
-import type { links, PaginationType } from '@/interfaces/Utils'
+import type { Column, links, PaginationType } from '@/interfaces/Utils'
 import { useRouter } from 'vue-router'
 import { slideToggle } from '@/utils/slider'
 import { watchOnce } from '@vueuse/core'
 
-const emit = defineEmits(['toggle', 'toggleExport', 'changeURL', 'getValue'])
+const emit = defineEmits(['toggle', 'toggleExport', 'changeURL', "getValue"])
 const inputId = 'autofocus-input';
 const router = useRouter()
 
 interface Param {
-    limit?: number
-    'sort-method'?: string
-    'sort-by'?: string
-    'search-query'?: string
+    perpage?: number
+    sort?: string
+    order_by?: string
+    search?: string
     page?: number
-}
-interface Column {
-    name: string
-    label: string
-    sortable: boolean
-    checkable?: boolean
-    textTypes?: any
-    hidden?: boolean
-    width?: string
-    bold?: boolean
-    headerClass?: string
-    routeName?: string
-    class?: string
-    isNumber?: boolean
-    targetCollapsed?: boolean
-    currency?: string
-    fixedNumber?: number
-    style?: { [key: string]: string }
-    percentage?: { target: string; actual: string }
-    custom?: any
-    badge?: any
-    dateConfig?: any
-    offcanvas?: any
-    stackedImage?: boolean
-    isArray?: boolean
-    isFirst?: boolean
-    isLast?: boolean
-    defaultValue?: any
-    display?: string
-    customizeRow?: boolean
-    customizeHeader?: boolean
-    truncate?: boolean
-    params?: { id: string; date: any }
+    [key: string]: string | number | undefined;
 }
 const props = defineProps({
     url: {
@@ -84,6 +52,10 @@ const props = defineProps({
     table_pagination: {
         type: Boolean,
         default: true
+    },
+    table_per_page: {
+        type: Array,
+        default: () => ['10', '25', '50', '100']
     }
 })
 const state = reactive({
@@ -92,67 +64,61 @@ const state = reactive({
     tableUrl: props.url,
     tableParam: props.params,
     columns: props.column as Column[],
-    perPage: ['10', '25', '50', '100'],
+    perPage: props.table_per_page as (string | number)[],
     arrows: {
-        arr: props.params?.['sort-method'] ?? 'asc',
-        col: props.params?.['sort-by'] ?? 'id'
+        arr: props.params?.sort ?? 'asc',
+        col: props.params?.order_by ?? 'id'
     },
     loadingState: false,
     tableData: {
-        limit: props.params?.limit ?? 10,
-        'sort-method': props.params?.['sort-method'] ?? 'asc',
-        'sort-by': props.params?.['sort-by'] ?? 'id',
-        // Add this line to include all params from parent
-        ...(props.params || {})
+        perpage: props.params?.perpage ?? 10,
+        sort: props.params?.sort ?? 'asc',
+        order_by: props.params?.order_by ?? 'id',
+        ...(props.params || {}),
     } as Param,
     page: null as number | null,
     pagination: {} as PaginationType
 })
 const avatar = (avatar: string | null | undefined) => getAvatar(avatar)
 const getProjects = (url = state.tableUrl) => {
-    if (isFetching.value) return
+    if (isFetching.value) return;
     let par = { ...state.tableData }
-    
     if (state.tableParam && Object.keys(state.tableParam).length) {
         par = { ...state.tableParam, ...state.tableData }
     }
-    
     if (state.page) {
-        par.page = state.page
+        par.page = state.page;
     }
-    
-    // Clean up empty search query before making request
-    if (par['search-query'] === '' || par['search-query'] === null || par['search-query'] === undefined) {
-        delete par['search-query']
+    if (par.perpage && typeof par.perpage === "string") {
+        par.perpage = parseInt(par.perpage, 10);
     }
-    
+    if (par.search === "" || par.search === null || par.search === undefined) {
+        delete par.search;
+    }
     const paramData = Object.fromEntries(
-        Object.entries(par).filter(([key, value]) => 
-            value !== null && 
-            value !== '' && 
-            value !== undefined
+        Object.entries(par).filter(
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            ([key, value]) => value !== null && value !== "" && value !== undefined
         )
-    )
+    );
     const paramExport = Object.fromEntries(
-        Object.entries(par).filter(([key, value]) => 
-            value !== null && 
-            value !== '' && 
-            value !== undefined && 
-            key !== 'page' && 
-            key !== 'sort-by' && 
-            key !== 'sort-method' && 
-            key !== 'limit'
+        Object.entries(par).filter(
+            ([key, value]) =>
+                value !== null &&
+                value !== "" &&
+                value !== undefined &&
+                key !== "page" &&
+                key !== "sort" &&
+                key !== "order_by" &&
+                key !== "perpage"
         )
-    )
-    
-    state.projects = []
-    changeRoute(par)
+    );
+    state.projects = [];
+    changeRoute(paramData)
     state.loadingState = true
-    isFetching.value = true
-
+    isFetching.value = true;
     emit('changeURL', paramExport)
     emit('toggle', false)
-
     utilsService
         .fetchIndex(url, paramData)
         .then((res) => {
@@ -169,9 +135,9 @@ const getProjects = (url = state.tableUrl) => {
             }
         })
         .finally(() => {
-            state.page = null
-            state.loadingState = false
-            isFetching.value = false
+            state.page = null;
+            isFetching.value = false;
+            state.loadingState = false;
             emit('toggle', true)
         })
 }
@@ -190,99 +156,111 @@ function shouldHideDate(item: { [x: string]: any }, column: Column): boolean {
     if (!config) return true;
 
     const left = getObjectValue(item, config.compare);
-    const right = typeof config.with === 'string' && item[config.with] !== undefined
-        ? getObjectValue(item, config.with)
-        : config.with;
+    const right =
+        typeof config.with === "string" && item[config.with] !== undefined
+            ? getObjectValue(item, config.with)
+            : config.with;
 
     switch (config.operator) {
-        case '==': return left == right;
-        case '===': return left === right;
-        case '!=': return left != right;
-        case '!==': return left !== right;
-        case '<': return left < right;
-        case '>': return left > right;
-        case '<=': return left <= right;
-        case '>=': return left >= right;
-        default: return false; // fallback: no hide
+        case "==":
+            return left == right;
+        case "===":
+            return left === right;
+        case "!=":
+            return left != right;
+        case "!==":
+            return left !== right;
+        case "<":
+            return left < right;
+        case ">":
+            return left > right;
+        case "<=":
+            return left <= right;
+        case ">=":
+            return left >= right;
+        default:
+            return false; // fallback: no hide
     }
 }
 const searching = _debounce(async (e: Event) => {
     const target = e.target as HTMLInputElement;
-    const value = target.value.trim()
-    
-    if (value === '') {
-        // If manually cleared, treat it like clearSearch
-        state.tableData['search-query'] = ''
-        delete state.tableData['search-query']
-        
-        if (state.tableParam && state.tableParam['search-query']) {
-            delete state.tableParam['search-query']
-        }
-        
-        // Update route to remove search-query
-        const currentParams = { ...state.tableData }
-        delete currentParams['search-query']
-        changeRoute(currentParams)
-    } else {
-        state.tableData['search-query'] = value
-    }
-    
-    getProjects()
-}, 1000)
+    const value = target.value.trim();
 
+    if (value === "") {
+        // If manually cleared, treat it like clearSearch
+        state.tableData.search = "";
+        delete state.tableData.search;
+
+        if (state.tableParam && state.tableParam.search) {
+            delete state.tableParam.search;
+        }
+
+        // Update route to remove search-query
+        const currentParams = { ...state.tableData };
+        delete currentParams.search;
+        changeRoute(currentParams);
+    } else {
+        state.tableData.search = value;
+    }
+
+    getProjects();
+}, 1000)
 const clearSearch = () => {
     // Clear from tableData
-    state.tableData['search-query'] = ''
-    delete state.tableData['search-query']
-    
+    state.tableData.search = "";
+    delete state.tableData.search;
+
     // Clear from tableParam as well
-    if (state.tableParam && state.tableParam['search-query']) {
-        delete state.tableParam['search-query']
+    if (state.tableParam && state.tableParam.search) {
+        delete state.tableParam.search;
     }
-    
+
     // Clear the input field
-    const searchInput = document.getElementById(inputId) as HTMLInputElement
+    const searchInput = document.getElementById(inputId) as HTMLInputElement;
     if (searchInput) {
-        searchInput.value = ''
+        searchInput.value = "";
     }
-    
+
     // Force update the route to remove search-query from URL completely
-    const currentParams = { ...state.tableData }
-    delete currentParams['search-query']
-    changeRoute(currentParams)
-    
-    getProjects()
+    const currentParams = { ...state.tableData };
+    delete currentParams.search;
+    changeRoute(currentParams);
+
+    getProjects();
 }
 const sortBy = (key: string) => {
-    state.tableData['sort-by'] = key
-    state.tableData['sort-method'] = state.tableData['sort-method'] === 'desc' ? 'asc' : 'desc'
-    state.arrows.arr = state.tableData['sort-method']
+    state.tableData.order_by = key
+    state.tableData.sort = state.tableData.sort === 'desc' ? 'asc' : 'desc'
+    state.arrows.arr = state.tableData.sort
     state.arrows.col = key
-    
-    // Completely remove search-query if it's empty
-    if (!state.tableData['search-query'] || state.tableData['search-query'] === '') {
-        delete state.tableData['search-query']
+    if (!state.tableData.search || state.tableData.search === "") {
+        delete state.tableData.search;
     }
-    
     // Also check tableParam
-    if (state.tableParam && (!state.tableParam['search-query'] || state.tableParam['search-query'] === '')) {
-        delete state.tableParam['search-query']
+    if (
+        state.tableParam &&
+        (!state.tableParam.search || state.tableParam.search === "")
+    ) {
+        delete state.tableParam.search;
     }
-    
     getProjects()
 }
-const getObjectValue = (obj: { [x: string]: any }, path: string, defaultValue?: any) => {
-    if (!path.includes('.')) {
+const getObjectValue = (
+    obj: { [x: string]: any },
+    path: string,
+    defaultValue?: any
+) => {
+    if (!path.includes(".")) {
         return obj[path] !== undefined && obj[path] !== null
             ? obj[path]
             : defaultValue
                 ? defaultValue
-                : null
+                : null;
     }
-    const keys = path.split('.')
-    let result = obj
+    const keys = path.split(".");
+    let result = obj;
     for (const key of keys) {
-        if (result !== null && result !== undefined && typeof result === 'object') {
+        if (result !== null && result !== undefined && typeof result === "object") {
             if (Object.prototype.hasOwnProperty.call(result, key)) {
                 result = result[key]
             } else {
@@ -307,7 +285,7 @@ function checkIcon(column: { sortable: boolean; name: string }) {
 }
 const changer = (data: string) => {
     let value = null
-    let params = new URL(data).searchParams;
+    const params = new URL(data).searchParams;
     if (params) {
         const page = params.get("page")
         if (page) {
@@ -320,30 +298,31 @@ const redirect = (url: links | null) => {
     if (url != null) {
         if (url.label.includes('Previous') || url.label.includes('Next')) {
             if (url.url) {
-                let page = changer(url.url)
+                const page = changer(url.url)
                 if (page) {
                     state.page = page
                 }
             }
         } else {
-            state.page = Number(url.label)
+            state.page = Number(url.label);
         }
         getProjects()
     }
 }
 const toggleFilter = () => {
-    let searchDiv = document.getElementById('search-filter')
-    state.toggleButton = !state.toggleButton
-    slideToggle(searchDiv, 200)
-}
+    const searchDiv = document.getElementById("search-filter");
+    state.toggleButton = !state.toggleButton;
+    slideToggle(searchDiv, 200);
+};
 function changeRoute(data: object) {
     const paramData = Object.fromEntries(
-        Object.entries(data).filter(([key, value]) => 
-            value !== null && 
-            value !== '' && 
-            value !== undefined &&
-            // Remove search-query if it's empty
-            !(key === 'search-query' && (value === '' || value === null))
+        Object.entries(data).filter(
+            ([key, value]) =>
+                value !== null &&
+                value !== "" &&
+                value !== undefined &&
+                // Remove search-query if it's empty
+                !(key === "search" && (value === "" || value === null))
         )
     )
     router.replace({
@@ -351,74 +330,114 @@ function changeRoute(data: object) {
     })
 }
 const debouncedGetProjects = _debounce(() => {
-    if (isFetching.value) return
-    getProjects()
-}, 100)
+    if (isFetching.value) return;
+    getProjects();
+}, 100);
 const isDataEmpty = ref(false)
-// Add this flag to prevent double calls
 const isFetching = ref(false)
 
-// Handle initial fetch with watchOnce
 watchOnce(
     [() => state.tableData, () => props.params],
     () => {
         // Sync tableData with props.params on initialization
         if (props.params) {
-            state.tableData = { ...state.tableData, ...props.params }
-            state.tableParam = props.params
+            state.tableData = { ...state.tableData, ...props.params };
+            state.tableParam = props.params;
         }
         nextTick(() => {
-            getProjects()
-        })
+            getProjects();
+        });
     },
     { immediate: true }
-)
+);
 
 // Handle subsequent changes with regular watch
 watch(
     [() => props.params],
     ([newParams], [oldParams]) => {
-        const paramsChanged = JSON.stringify(newParams) !== JSON.stringify(oldParams)
-        
+        const paramsChanged =
+            JSON.stringify(newParams) !== JSON.stringify(oldParams);
+
         if (paramsChanged && newParams) {
             // Check if search input is actually empty
-            const searchInput = document.getElementById(inputId) as HTMLInputElement
-            const hasSearchValue = searchInput && searchInput.value && searchInput.value.trim() !== ''
-            
+            const searchInput = document.getElementById(inputId) as HTMLInputElement;
+            const hasSearchValue =
+                searchInput && searchInput.value && searchInput.value.trim() !== "";
+
             // Update tableData with new params
-            const updatedData = { ...state.tableData, ...newParams }
-            
+            const updatedData = { ...state.tableData, ...newParams };
+
+            // Remove keys that are not in newParams
+            Object.keys(updatedData).forEach((key) => {
+                if (
+                    !(key in newParams) &&
+                    key !== "perpage" &&
+                    key !== "order_by" &&
+                    key !== "sort"
+                ) {
+                    delete updatedData[key];
+                }
+            });
+
             // If search input is empty, don't restore search-query from params
-            if (!hasSearchValue && updatedData['search-query']) {
-                delete updatedData['search-query']
+            if (!hasSearchValue && updatedData.search) {
+                delete updatedData.search;
             }
-            
-            state.tableData = updatedData
-            state.tableParam = { ...newParams }
-            
+
+            state.tableData = updatedData;
+            state.tableParam = { ...newParams };
+
             // Also clean tableParam if search is empty
-            if (!hasSearchValue && state.tableParam['search-query']) {
-                delete state.tableParam['search-query']
+            if (!hasSearchValue && state.tableParam.search) {
+                delete state.tableParam.search;
             }
-            
-            debouncedGetProjects()
+
+            debouncedGetProjects();
         }
     },
     { deep: true }
-)
+);
 
-// Watch for tableData changes (like limit, search, etc.)
+// Watch for tableData changes (like perpage, search, etc.)
 watch(
     () => state.tableData,
     (newTableData, oldTableData) => {
-        const tableDataChanged = JSON.stringify(newTableData) !== JSON.stringify(oldTableData)
-        
+        const tableDataChanged =
+            JSON.stringify(newTableData) !== JSON.stringify(oldTableData);
+
         if (tableDataChanged) {
-            debouncedGetProjects()
+            debouncedGetProjects();
         }
     },
     { deep: true }
-)
+);
+
+// Watch specifically for perpage changes to ensure they trigger properly
+watch(
+    () => state.tableData.perpage,
+    (newPerPage, oldPerPage) => {
+        if (newPerPage !== oldPerPage) {
+            // Reset to page 1 when perpage changes
+            state.page = 1;
+            getProjects();
+        }
+    }
+);
+
+// Watch specifically for search changes from parent filter form
+watch(
+    () => props.params?.search,
+    (newSearch, oldSearch) => {
+        // Only update if the value actually changed
+        if (newSearch !== oldSearch) {
+            if (newSearch === null || newSearch === undefined || newSearch === "") {
+                delete state.tableData.search;
+            } else {
+                state.tableData.search = newSearch;
+            }
+        }
+    }
+);
 </script>
 
 <template>
@@ -428,7 +447,7 @@ watch(
                 <div class="col-sm-12 col-md-6" v-if="props.table_show">
                     <div class="dataTables_length" id="datatable_length">
                         <label>Show
-                            <select v-model="state.tableData.limit" name="datatable_length" aria-controls="datatable"
+                            <select v-model="state.tableData.perpage" name="datatable_length" aria-controls="datatable"
                                 class="form-select form-select-sm">
                                 <option v-for="(records, index) in state.perPage" :key="index" :value="records">
                                     {{ records }}
@@ -444,9 +463,7 @@ watch(
                         <label>Search:
                             <input :id="inputId" @input="searching" type="search"
                                 class="form-control form-control-sm pe-4" placeholder="" aria-controls="datatable" />
-                            <button v-if="state.tableData['search-query']" 
-                                @click="clearSearch" 
-                                type="button" 
+                            <button v-if="state.tableData['search-query']" @click="clearSearch" type="button"
                                 class="btn-clear-search">
                                 <i class="ri-close-line"></i>
                             </button>
@@ -462,7 +479,7 @@ watch(
             </div>
         </div>
         <template v-if="props.table_filter">
-            <div id="search-filter" class="row mb-1" style="display: none;">
+            <div id="search-filter" class="row mb-1" style="display: none">
                 <div class="row pe-0">
                     <slot name="filter"></slot>
                 </div>
@@ -472,15 +489,15 @@ watch(
         <div class="row">
             <div style="overflow-x: auto; overflow-y: hidden;">
                 <table id="datatable"
-                    class="table dt-responsive nowrap table-nowrap table-bordered table-hover text-uppercase fs-11 align-middle dataTable no-footer dtr-inline"
+                    class="table dt-responsive nowrap table-nowrap table-bordered table-hover fs-11 align-middle dataTable no-footer dtr-inline"
                     style="width: 100%">
                     <thead class="align-middle">
-                        <tr class="text-info bg-light">
+                        <tr class="text-info text-uppercase bg-light">
                             <th v-for="column in state.columns" :key="column.name"
                                 @click="column.sortable ? sortBy(column.name) : null" :style="{
                                     width: column.width,
                                     cursor: column.sortable ? 'pointer' : 'default',
-                                    ...column.style
+                                    ...column.style,
                                 }" :class="checkIcon(column)" :hidden="column.hidden ?? false">
                                 <template v-if="column.customizeHeader">
                                     <slot :name="`header-${column.name}`" :items="state.projects"></slot>
@@ -505,9 +522,8 @@ watch(
                             </td>
                         </tr>
                         <tr v-for="(item, indexP) in state.projects" :key="indexP" v-else>
-                            <td v-for="(column, indexC) in state.columns" :key="indexC" align="center"
-                                :class="column.bold ? 'fw-semibold ' : 'fw-normal ' + column.class"
-                                :hidden="column.hidden ?? false">
+                            <td v-for="(column, indexC) in state.columns" :key="indexC" align="center" :class="(column.bold ? 'fw-semibold ' : 'fw-normal ') +
+                                (column.class ?? '')" :hidden="column.hidden ?? false">
                                 <template v-if="column.customizeRow">
                                     <slot :name="`column-${column.name}`" :item="item" />
                                 </template>
@@ -530,49 +546,55 @@ watch(
                                         <PercentageBadge :label="Number(calculateGrowth(
                                             getObjectValue(item, column.percentage.target),
                                             getObjectValue(item, column.percentage.actual)
-                                        ).result)
-                                            " :status="calculateGrowth(
-                                                getObjectValue(item, column.percentage.target),
-                                                getObjectValue(item, column.percentage.actual)
-                                            ).success
-                                                ">
+                                        ).result
+                                        )" :status="calculateGrowth(
+                                            getObjectValue(item, column.percentage.target),
+                                            getObjectValue(item, column.percentage.actual)
+                                        ).success
+                                            ">
                                         </PercentageBadge>
                                     </div>
                                 </template>
                                 <template v-else-if="column.custom">
-                                    <div v-if="column.custom.routeName"
-                                        :class="(column.bold ? 'fw-semibold ' : 'fw-normal ') + column.class">
-                                        <span>
-                                            <template v-if="
-                                                column.custom.parent &&
-                                                getObjectValue(item, column.custom.parent.data) !== null
-                                            ">
-                                                <i :class="column.custom.parent.icon ?? column.custom.icon" :style="column.custom.parent.iconColorObject
-                                                    ? 'color: ' +
-                                                    getObjectValue(item, column.custom.parent.iconColorObject) +
-                                                    ';'
-                                                    : column.custom.parent.iconColor
-                                                        ? 'color: ' + column.custom.parent.iconColor + ';'
-                                                        : null
-                                                    "></i>
-                                                <router-link :to="{
-                                                    name: column.custom.parent.routeName,
-                                                    params: {
-                                                        id: getObjectValue(item, column.custom.parent.params)
-                                                    }
-                                                }">
-                                                    {{ getObjectValue(item, column.custom.parent.name) }}</router-link>
-                                                <i class="las la-arrow-right ms-1 me-1 text-muted"></i>
-                                            </template>
-                                            <i v-if="column.custom.icon" :class="column.custom.icon" :style="column.custom.iconColorObject
-                                                ? 'color: ' + getObjectValue(item, column.custom.iconColorObject) + ';'
-                                                : column.custom.iconColor
-                                                    ? 'color: ' + column.custom.iconColor + ';'
-                                                    : null
-                                                "></i>
-                                            <img v-if="column.custom.image"
-                                                :src="avatar(getObjectValue(item, column.custom.image))"
-                                                class="rounded-circle avatar-xxs me-2" />
+                                    <span v-if="
+                                        column.custom.parent &&
+                                        getObjectValue(item, column.custom.parent.data) !== null
+                                    ">
+                                        <i :class="column.custom.parent.icon ?? column.custom.icon" :style="{
+                                            color: column.custom.parent.iconColorObject
+                                                ? getObjectValue(
+                                                    item,
+                                                    column.custom.parent.iconColorObject
+                                                )
+                                                : (column.custom.parent.iconColor ?? null),
+                                        }"></i>
+                                        <router-link :to="{
+                                            name: column.custom.parent.routeName,
+                                            params: {
+                                                id: getObjectValue(item, column.custom.parent.params),
+                                            },
+                                        }">
+                                            {{ getObjectValue(item, column.custom.parent.name) }}
+                                        </router-link>
+                                        <i class="las la-arrow-right ms-1 me-1 text-muted"></i>
+                                    </span>
+                                    <i v-if="
+                                        column.custom.icon &&
+                                        getObjectValue(item, column.custom.display ?? column.name)
+                                    " :class="column.custom.icon" :style="{
+                                        color: column.custom.iconColorObject
+                                            ? getObjectValue(item, column.custom.iconColorObject)
+                                            : column.custom.iconColor,
+                                    }"></i>
+                                    <component v-if="column.custom.image" :is="column.custom.link ? 'a' : 'span'" :href="column.custom.link
+                                        ? getObjectValue(item, column.custom.image)
+                                        : undefined
+                                        " target="_blank">
+                                        <img :src="avatar(getObjectValue(item, column.custom.image))"
+                                            class="rounded-circle avatar-xxs me-2" />
+                                    </component>
+                                    <template v-if="column.custom.routeName">
+                                        <template v-if="Array.isArray(item[column.name])">
                                             <template v-if="column.isFirst">
                                                 <router-link :to="{
                                                     name: column.custom.routeName,
@@ -586,73 +608,109 @@ watch(
                                                     }}
                                                 </router-link>
                                             </template>
-                                            <template v-else>
-                                                <router-link
-                                                    v-if="getObjectValue(item, column.custom.display ?? column.name)"
-                                                    :to="{
-                                                        name: column.custom.routeName,
-                                                        params: {
-                                                            id: getObjectValue(item, column.custom.params)
-                                                        }
-                                                    }">
-                                                    {{ getObjectValue(item, column.custom.display ?? column.name) }}
-                                                    <i v-if="
-                                                        column.custom.uniqueFirst &&
-                                                        getObjectValue(item, column.custom.uniqueFirst.fields) ===
-                                                        column.custom.uniqueFirst.value
-                                                    " :class="column.custom.uniqueFirst.icon"></i>
+                                            <span v-else v-for="(subItem, idx) in item[column.name]" :key="idx">
+                                                <router-link :to="{
+                                                    name: column.custom.routeName,
+                                                    params: {
+                                                        id: getObjectValue(subItem, column.custom.params),
+                                                    },
+                                                }">
+                                                    {{
+                                                        getObjectValue(
+                                                            subItem,
+                                                            column.custom.display ?? column.name
+                                                        )
+                                                    }}
                                                 </router-link>
-                                                <template v-if="column.custom.uniqueIcon">
-                                                    <slot :name="`column-${column.name}-unique`" :item="item" />
-                                                </template>
-                                            </template>
-                                        </span>
-                                    </div>
-                                    <template v-else-if="column.custom.image">
-                                        <img v-if="column.custom.image"
-                                            :src="avatar(getObjectValue(item, column.custom.image))"
-                                            class="rounded-circle avatar-xxs me-2" />
-                                        {{ getObjectValue(item, column.name) }}
-                                        <i v-if="
-                                            column.custom.uniqueFirst &&
-                                            getObjectValue(item, column.custom.uniqueFirst.fields) ===
-                                            column.custom.uniqueFirst.value
-                                        " :class="column.custom.uniqueFirst.icon"></i>
+                                                <span v-if="idx < item[column.name].length - 1">,
+                                                </span>
+                                            </span>
+                                        </template>
+                                        <template v-else>
+                                            <router-link v-if="getObjectValue(item, column.name)" :to="{
+                                                name: column.custom.routeName,
+                                                params: {
+                                                    id: getObjectValue(item, column.custom.params),
+                                                },
+                                            }">
+                                                {{
+                                                    getObjectValue(
+                                                        item,
+                                                        column.custom.display ?? column.name, column.custom.defaultValue
+                                                    )
+                                                }}
+                                            </router-link>
+                                            <span v-else>
+                                                {{ column.custom.defaultValue ?? '-' }}
+                                            </span>
+                                        </template>
                                     </template>
-                                    <div v-else :class="column.class">
-                                        <span v-if="getObjectValue(item, column.custom.display ?? column.name)">
-                                            <i :class="column.custom.icon"></i>
-                                            {{ getObjectValue(item, column.custom.display ?? column.name) }}
-                                        </span>
-                                    </div>
+                                    <template v-else>
+                                        <component :is="column.custom.link ? 'a' : 'span'" :href="column.custom.link
+                                            ? getObjectValue(item, column.custom.display ?? column.name).includes('http')
+                                                ? getObjectValue(item, column.custom.display ?? column.name)
+                                                : 'https://' +
+                                                getObjectValue(item, column.custom.display ?? column.name)
+                                            : undefined
+                                            " target="_blank" v-if="
+                                                getObjectValue(
+                                                    item,
+                                                    column.custom.display ?? column.name
+                                                )">
+                                            {{
+                                                getObjectValue(
+                                                    item,
+                                                    column.custom.display ?? column.name
+                                                )
+                                            }}
+                                        </component>
+                                    </template>
+                                    <i v-if="
+                                        column.custom.uniqueFirst &&
+                                        getObjectValue(item, column.custom.uniqueFirst.fields) ===
+                                        column.custom.uniqueFirst.value
+                                    " :class="column.custom.uniqueFirst.icon"></i>
+                                    <slot v-if="column.custom.uniqueIcon" :name="`column-${column.name}-unique`"
+                                        :item="item" />
                                 </template>
                                 <template v-else-if="column.badge">
-                                    <div v-if="column.badge.default && column.badge.default.value == getObjectValue(item, column.badge.default.name ?? column.name)"
-                                        :class="column.badge.default.class">
+                                    <div v-if="
+                                        column.badge.default &&
+                                        column.badge.default.value ==
+                                        getObjectValue(
+                                            item,
+                                            column.badge.default.name ?? column.name
+                                        )
+                                    " :class="column.badge.default.class">
                                         <strong>{{ column.badge.default.text }}</strong>
                                     </div>
                                     <template v-else>
                                         <template v-if="column.badge.types">
-                                            <div v-if="column.badge.isArray">
-                                                <div v-for="(array, indexA) in item[column.name]" :key="indexA">
-                                                    <div v-for="(model, indexB) in column.badge.types" :key="indexB">
-                                                        <div
-                                                            v-if="model.value === getObjectValue(array, column.badge.display)">
-                                                            <span v-if="column.badge.custom"
-                                                                :class="'badge text-' + model.textColor"
-                                                                :style="'background-color: ' + model.color + ';'">{{
-                                                                    model.label ? model.label : getObjectValue(array,
-                                                                        column.badge.display)
-                                                                }}</span>
-                                                            <span v-else
-                                                                :class="'badge bg-' + model.type + '-subtle text-' + model.type + ' p-2'">{{
-                                                                    model.label ? model.label : getObjectValue(array,
-                                                                        column.badge.display)
-                                                                }}</span>
+                                            <template v-if="Array.isArray(item[column.name])">
+                                                <template v-for="(array, indexA) in item[column.name]" :key="indexA">
+                                                    <template v-for="(model, indexB) in column.badge.types"
+                                                        :key="indexB">
+                                                        <div v-if="
+                                                            model.value ===
+                                                            getObjectValue(array, column.badge.display)
+                                                        ">
+                                                            <span v-if="column.badge.custom" class="badge"
+                                                                :class="'text-' + model.textColor"
+                                                                :style="{ 'background-color': model.color }">
+                                                                {{
+                                                                    model.label ??
+                                                                    getObjectValue(array, column.badge.display)
+                                                                }}
+                                                            </span>
+                                                            <span v-else class="badge"
+                                                                :class="'bg-' + model.type + '-subtle text-' + model.type + ' p-2'">
+                                                                {{ model.label ?? getObjectValue(array,
+                                                                    column.badge.display) }}
+                                                            </span>
                                                         </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                                    </template>
+                                                </template>
+                                            </template>
                                             <template v-else>
                                                 <template v-for="(model, indexA) in column.badge.types" :key="indexA">
                                                     <template
@@ -663,55 +721,74 @@ watch(
                                                             {{ model.label ?? getObjectValue(item, column.display ??
                                                                 column.name) }}
                                                         </span>
-                                                        <span v-else
-                                                            :class="'badge bg-' + model.type + '-subtle text-' + model.type + ' p-2'">{{
-                                                                model.label ?? getObjectValue(item,
-                                                                    column.display ?? column.name)
-                                                            }}</span>
+                                                        <span v-else class="badge"
+                                                            :class="'bg-' + model.type + '-subtle text-' + model.type + ' p-2'">
+                                                            {{ model.label ?? getObjectValue(item, column.display ??
+                                                                column.name) }}
+                                                        </span>
                                                     </template>
                                                 </template>
                                             </template>
                                         </template>
-                                        <div v-else id="Badge">
-                                            <div v-if="column.badge.isArray">
+                                        <template v-else>
+                                            <div v-if="Array.isArray(item[column.name])">
                                                 <template v-for="(array, indexA) in item[column.name]" :key="indexA">
                                                     <span v-if="column.badge.custom"
-                                                        :class="'badge text-' + column.badge.textColor" :style="'background-color: ' + getObjectValue(array, column.badge.color) + ';'
-                                                            ">{{ getObjectValue(array, column.badge.display) }}</span>
+                                                        :class="'badge text-' + column.badge.textColor" :style="{
+                                                            'background-color': getObjectValue(
+                                                                array,
+                                                                column.badge.color
+                                                            ),
+                                                        }">
+                                                        {{ getObjectValue(array, column.badge.display) }}
+                                                    </span>
                                                     <span v-else :class="'badge bg-' +
                                                         column.badge.type +
                                                         '-subtle text-' +
                                                         column.badge.type +
-                                                        ' p-2'
-                                                        ">{{ getObjectValue(array, column.badge.display) }}</span>
+                                                        ' p-2 me-1'
+                                                        ">{{ getObjectValue(array, column.badge.display) }}
+                                                    </span>
                                                 </template>
                                             </div>
                                             <div v-else>
                                                 <span v-if="column.badge.custom"
-                                                    :class="'badge text-' + column.badge.textColor"
-                                                    :style="'background-color: ' + getObjectValue(item, column.badge.color) + ';'">{{
-                                                        getObjectValue(item,
-                                                            column.name) }}</span>
-                                                <span v-else :class="'badge bg-' + column.badge.type + '-subtle text-' + column.badge.type + ' p-2'
+                                                    :class="'badge text-' + column.badge.textColor" :style="{
+                                                        'background-color': getObjectValue(
+                                                            item,
+                                                            column.badge.color
+                                                        ),
+                                                    }">
+                                                    {{ getObjectValue(item, column.name) }}
+                                                </span>
+                                                <span v-else :class="'badge bg-' +
+                                                    column.badge.type +
+                                                    '-subtle text-' +
+                                                    column.badge.type +
+                                                    ' p-2'
                                                     ">{{ getObjectValue(item, column.name) }}</span>
                                             </div>
-                                        </div>
+                                        </template>
                                     </template>
                                 </template>
                                 <template v-else-if="column.dateConfig">
                                     <template v-if="shouldHideDate(item, column)">
+                                        <i class="ri-time-line me-1 text-muted" v-if="column.dateConfig.icon"></i>
                                         <router-link v-if="column.routeName && column.params" :to="{
                                             name: column.routeName,
                                             params: {
-                                                id: getObjectValue(item, column.params.id)
+                                                id: getObjectValue(item, column.params.id),
                                             },
                                             query: {
-                                                date: getObjectValue(item, column.params.date)
-                                            }
+                                                date: getObjectValue(item, column.params.date),
+                                            },
                                         }">
                                             {{
-                                                formatDate(item[column.name], column.dateConfig.before,
-                                                    column.dateConfig.after)
+                                                formatDate(
+                                                    item[column.name],
+                                                    column.dateConfig.before,
+                                                    column.dateConfig.after
+                                                )
                                             }}
                                         </router-link>
                                         <template v-else>
@@ -732,6 +809,14 @@ watch(
                                 <template v-else-if="column.defaultValue">
                                     {{ getObjectValue(item, column.name, column.defaultValue) }}
                                 </template>
+                                <template v-else-if="column.isIndex">
+                                    {{
+                                        (state.pagination.currentPage - 1) *
+                                        Number(state.tableData.limit) +
+                                        indexP +
+                                        (column.startIndex || 1)
+                                    }}
+                                </template>
                                 <template v-else-if="column.checkable">
                                     <span class="text-success fw-semibold" v-if="
                                         getObjectValue(item, column.name) !== null &&
@@ -744,13 +829,22 @@ watch(
                                         <template v-if="model.value === getObjectValue(item, column.name)">
                                             <span :class="'fw-semibold text-' + model.type">{{
                                                 model.label ?? getObjectValue(item, column.display ?? column.name)
-                                                }}</span>
+                                            }}</span>
                                         </template>
                                     </template>
                                 </template>
                                 <template v-else-if="column.truncate">
-                                    <span class="truncate-class text-truncate">
-                                        {{ getObjectValue(item, column.name) }}
+                                    <a v-if="column.link" :href="String(
+                                        getObjectValue(item, column.display ?? column.name)
+                                    ).includes('http')
+                                        ? getObjectValue(item, column.display ?? column.name)
+                                        : 'https://' +
+                                        getObjectValue(item, column.display ?? column.name)
+                                        " class="truncate-class text-truncate" target="_blank">
+                                        {{ getObjectValue(item, column.display ?? column.name) }}
+                                    </a>
+                                    <span v-else class="truncate-class text-truncate">
+                                        {{ getObjectValue(item, column.display ?? column.name) }}
                                     </span>
                                 </template>
                                 <template v-else>

@@ -1,17 +1,8 @@
-<script>
-import animationData from "@/components/widgets/etwtznjn.json";
-import Lottie from "@/components/widgets/lottie.vue";
+<script setup lang="ts">
+import animationData from "@/components/widgets/etwtznjn.json"
+import Lottie from "@/components/widgets/lottie.vue"
 
-export default {
-    data() {
-        return {
-            defaultOptions: { animationData: animationData },
-        };
-    },
-    components: {
-        lottie: Lottie
-    }
-};
+const defaultOptions = { animationData }
 </script>
 
 <template>

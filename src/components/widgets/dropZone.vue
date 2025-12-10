@@ -19,16 +19,11 @@
 </template>
 
 
-<script>
-import { ref } from "vue";
-export default {
-  name: "dropzone",
-  setup() {
-    const active = ref(false);
-    const toggleActive = () => {
-      active.value = !active.value;
-    };
-    return { active, toggleActive };
-  },
-};
+<script setup lang="ts">
+import { ref } from 'vue'
+
+const active = ref(false)
+const toggleActive = () => {
+  active.value = !active.value
+}
 </script>

@@ -8,8 +8,11 @@ File: Custom Css File
 
 .flatpickr-calendar {
   background-color: var(--#{$prefix}secondary-bg) !important;
-  box-shadow: 1px 0 0 var(--#{$prefix}border-color), -1px 0 0 var(--#{$prefix}border-color),
-    0 1px 0 var(--#{$prefix}border-color), 0 -1px 0 var(--#{$prefix}border-color),
+  box-shadow:
+    1px 0 0 var(--#{$prefix}border-color),
+    -1px 0 0 var(--#{$prefix}border-color),
+    0 1px 0 var(--#{$prefix}border-color),
+    0 -1px 0 var(--#{$prefix}border-color),
     0 3px 13px rgba(0, 0, 0, 0.08) !important;
 
   &.hasTime .flatpickr-time {
@@ -114,17 +117,18 @@ File: Custom Css File
   }
 }
 
-.multiselect {
-  border-color: var(--#{$prefix}border-color) !important;
-  background: $input-bg !important;
+// multiselect-option is-pointed
+// .multiselect {
+//   border-color: var(--#{$prefix}border-color) !important;
+//   background: $input-bg !important;
 
-  .multiselect-option {
-    &.is-disabled {
-      background-color: var(--#{$prefix}tertiary-bg);
-      color: var(--#{$prefix}tertiary-color);
-    }
-  }
-}
+//   .multiselect-option {
+//     &.is-disabled {
+//       background-color: var(--#{$prefix}tertiary-bg);
+//       color: var(--#{$prefix}tertiary-color);
+//     }
+//   }
+// }
 
 .multiselect-search {
   color: $input-color !important;
@@ -338,7 +342,7 @@ File: Custom Css File
   }
 
   .mdi-checkbox-blank-circle::before {
-    content: "" !important;
+    content: '' !important;
   }
 }
 
@@ -417,6 +421,7 @@ File: Custom Css File
         background-color: $primary !important;
       }
     }
+
     &.is-pointed {
       background-color: var(--#{$prefix}tertiary-bg) !important;
       color: var(--#{$prefix}tertiary-color) !important;
@@ -430,9 +435,9 @@ File: Custom Css File
 }
 
 .filter-choices-input {
-  .multiselect {
-    border: none;
-  }
+  // .multiselect {
+  //   border: none;
+  // }
 
   .multiselect-caret,
   .multiselect-clear-icon {
@@ -564,14 +569,15 @@ File: Custom Css File
 }
 
 //
+
 .icon-primary {
   svg {
-    stroke: #405189;
+    stroke: $primary;
   }
 
   path {
-    fill: #405189;
-    stroke: #405189;
+    fill: $primary;
+    stroke: $primary;
   }
 }
 
@@ -585,6 +591,8 @@ File: Custom Css File
 
 .multiselect {
   padding: 0;
+  color: $input-color !important;
+  background: $input-bg !important;
 }
 
 .multiselect-wrapper {
@@ -790,9 +798,111 @@ table.dataTable > tbody > tr.child ul.dtr-details > li {
   @media (min-width: 1280px) {
     font-size: calc(1.375rem + 0.9vw);
   }
-  @media (min-width: 1440px) {
-    font-size: calc(1.5rem + 1.5vw);
-  }
+
+  // Additional utilities and custom styles imported from Untitled-1
+}
+
+// -------------------------
+// Palette: Gold / Silver / Platinum
+// -------------------------
+$gold: #daa511;
+$silver: #757575;
+$platinum: #a8a9ad;
+
+$gold-bg-subtle: tint-color($gold, 85%);
+$silver-bg-subtle: tint-color($silver, 85%);
+$platinum-bg-subtle: tint-color($platinum, 85%);
+
+$gold-text-emphasis: shade-color($gold, 15%);
+$silver-text-emphasis: shade-color($silver, 15%);
+$platinum-text-emphasis: shade-color($platinum, 15%);
+
+.bg-gold-subtle { background-color: $gold-bg-subtle !important; }
+.bg-gold { background-color: $gold !important; }
+.text-bg-gold { color: $gold !important; }
+.text-gold { color: $gold !important; }
+.text-gold-emphasis { color: $gold-text-emphasis !important; }
+
+.bg-silver-subtle { background-color: $silver-bg-subtle !important; }
+.bg-silver { background-color: $silver !important; }
+.text-bg-silver { color: $silver !important; }
+.text-silver { color: $silver !important; }
+.text-silver-emphasis { color: $silver-text-emphasis !important; }
+
+.bg-platinum-subtle { background-color: $platinum-bg-subtle !important; }
+.bg-platinum { background-color: $platinum !important; }
+.text-bg-platinum { color: $platinum !important; }
+.text-platinum { color: $platinum !important; }
+span.text-platinum { color: $platinum !important; }
+.text-platinum-emphasis { color: $platinum-text-emphasis !important; }
+
+// -------------------------
+// Dropzone preview helpers
+// -------------------------
+.preview-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.single-preview {
+  display: inline-block;
+  position: relative;
+}
+
+.remove-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+// -------------------------
+// Small utilities
+// -------------------------
+.truncate-class {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.phone {
+  letter-spacing: 1px;
+}
+
+// -------------------------
+// Search / datatable helper
+// -------------------------
+.btn-clear-search {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--vz-body-color);
+}
+
+div.dataTables_filter input { padding-right: 32px !important; }
+
+// -------------------------
+// Multiselect invalid state
+// -------------------------
+.multiselect.is-invalid {
+    border-color: #ee6352 !important;
 }
 
 .semi-font {
@@ -821,164 +931,40 @@ table.dataTable > tbody > tr.child ul.dtr-details > li {
   .form-control {
     border-color: $input-color !important;
   }
+  .ck-content {
+    color: #ffffff !important;
+  }
 }
 
-.preview-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 5px;
+.color-custom {
+  display: flex !important;
+  align-items: center !important;
+
+  div.vc-color-wrap {
+    margin-right: 0;
+    border-radius: 20%;
+  }
 }
 
-.single-preview {
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
+.form-control-color {
+  width: $form-color-width;
+  height: $input-height;
+  padding: $input-padding-y;
 
-.remove-btn {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  background: red;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.truncate-class {
-  display: inline-block;
-  max-width: 20rem;
-}
-
-.phone {
-  position: sticky;
-  top: 0;
-  /* z-index: 900; */
-}
-
-// $gold: #d4af37;
-// $silver: #c0c0c0;
-// $platinum: #d3d6d8;
-
-$gold: #DAA511;
-$silver: #757575;
-$platinum: #A8A9AD;
-
-$gold-bg-subtle: tint-color($gold, 85%);
-$silver-bg-subtle: tint-color($silver, 85%);
-$platinum-bg-subtle: tint-color($platinum, 85%);
-
-$gold-text-emphasis:   shade-color($gold, 15%);
-$silver-text-emphasis:   shade-color($silver, 15%);
-$platinum-text-emphasis:   shade-color($platinum, 15%);
-
-.bg-gold-subtle {
-  background-color: $gold-bg-subtle !important;
-}
-
-.bg-gold {
-  background-color: rgba($gold, 1) !important;
-}
-
-.text-bg-gold {
-  color: #fff !important;
-  background-color: rgba($gold, 1) !important;
-}
-
-.text-gold {
-  color: rgba($gold, 1) !important;
-}
-
-.text-gold-emphasis {
-  color: $gold-text-emphasis !important;
-}
-
-.bg-silver-subtle {
-  background-color: $silver-bg-subtle !important;
-}
-
-.bg-silver {
-  background-color: rgba($silver, 1) !important;
-}
-
-.text-bg-silver {
-  color: #fff !important;
-  background-color: rgba($silver, 1) !important;
-}
-
-.text-silver {
-  color: rgba($silver, 1) !important;
-}
-
-.text-silver-emphasis {
-  color: $silver-text-emphasis !important;
-}
-
-.bg-platinum-subtle {
-  background-color: $platinum-bg-subtle !important;
-}
-
-.bg-platinum {
-  background-color: rgba($platinum, 1) !important;
-}
-
-.text-bg-platinum {
-  color: #fff !important;
-  background-color: rgba($platinum, 1) !important;
-}
-
-.text-platinum {
-  color: rgba($platinum, 1) !important;
-}
-span.text-platinum {
-  color: black !important;
-}
-
-.text-platinum-emphasis {
-  color: $platinum-text-emphasis !important;
-}
-
-.btn-clear-search {
-    position: absolute;
-    right: 8px;
-    top: 40%;
-    transform: translateY(-50%);
-    border: none;
-    background: none;
-    padding: 4px;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  &:not(:disabled):not([readonly]) {
     cursor: pointer;
-    border-radius: 50%;
-    transition: all 0.2s ease;
-    color: #6c757d;
-}
+  }
 
-.btn-clear-search:hover {
-    background-color: #f8f9fa;
-    color: #495057;
-}
+  &::-moz-color-swatch {
+    border: 0 !important; // stylelint-disable-line declaration-no-important
+    @include border-radius($input-border-radius);
+  }
 
-.btn-clear-search:active {
-    background-color: #e9ecef;
-    transform: translateY(-50%) scale(0.95);
-}
+  &::-webkit-color-swatch {
+    border: 0 !important; // stylelint-disable-line declaration-no-important
+    @include border-radius($input-border-radius);
+  }
 
-.btn-clear-search i {
-    font-size: 14px;
-    line-height: 1;
-}
-
-.dataTables_filter input {
-    padding-right: 32px !important;
+  &.form-control-sm { height: $input-height-sm; }
+  &.form-control-lg { height: $input-height-lg; }
 }

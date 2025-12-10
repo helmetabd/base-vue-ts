@@ -1,7 +1,7 @@
 import { useAuthStore } from '@/stores/auth'
-const authStore = useAuthStore()
 
 function checkPermission(requiredPermission: any, mode: string) {
+  const authStore = useAuthStore()
   const arr = authStore.permissions
 
   const checker = arr.filter((e: { module: any }) => e.module == requiredPermission)

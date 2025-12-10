@@ -1,26 +1,22 @@
 <script setup lang="ts">
 import { useLayoutStore } from '../stores/layout'
 import { getAvatar } from '../utils/assetsHelper'
-import { onMounted, reactive } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 
 const layoutStore = useLayoutStore()
 const authStore = useAuthStore()
 const { changeMode } = layoutStore
-const data = reactive({
-  text: null,
-  flag: null,
-  search: '',
-  myVar: 1,
-  display_name: authStore.role,
-  name: authStore.user.fullname,
-  avatar: getAvatar(authStore.user.avatar),
-  options: []
-})
+// local UI state (if needed later) can be added here
+
+// derive reactive values from the auth store so they update automatically
+const displayName = computed(() => authStore.role?.display_name || '')
+const name = computed(() => authStore.user?.name || '')
+const avatar = computed(() => getAvatar(authStore.user?.avatar))
 const { loggingOut } = authStore
 onMounted(() => {
   document.addEventListener('scroll', function () {
-    var pageTopbar = document.getElementById('page-topbar')
+    const pageTopbar = document.getElementById('page-topbar')
     if (pageTopbar) {
       document.body.scrollTop >= 50 || document.documentElement.scrollTop >= 50
         ? pageTopbar.classList.add('topbar-shadow')
@@ -34,11 +30,11 @@ function signOut() {
 }
 
 function toggleHamburgerMenu() {
-  var windowSize = document.documentElement.clientWidth
-  let layoutType = layoutStore.layoutValue.layoutType
+  const windowSize = document.documentElement.clientWidth
+  const layoutType = layoutStore.layoutValue.layoutType
 
   layoutStore.changeVisibility({ visibility: 'show' })
-  let visiblilityType = layoutStore.layoutValue.visibility
+  const visiblilityType = layoutStore.layoutValue.visibility
 
   if (windowSize > 767) {
     document.querySelector('.hamburger-icon')?.classList.toggle('open')
@@ -111,7 +107,7 @@ function initFullScreen() {
                 <img src="@/assets/images/arjuna-sm.png" alt="" height="22" />
               </span>
               <span class="logo-lg">
-                <img src="@/assets/images/logo-light.png" alt="" height="40" />
+                <img src="@/assets/images/logo-light.png" alt="" height="17" />
               </span>
             </router-link>
           </div>
@@ -146,20 +142,20 @@ function initFullScreen() {
             <button id="profileButton" class="btn btn-md btn-link rounded-circle arrow-none shadow-none dropdown-toggle"
               aria-expanded="true" type="button" data-bs-toggle="dropdown" aria-haspopup="menu">
               <span class="d-flex align-items-center">
-                <img class="rounded-circle header-profile-user" :src="data.avatar" alt="Header Avatar" />
+                <img class="rounded-circle header-profile-user" :src="avatar" alt="Header Avatar" />
                 <span class="text-start ms-xl-2">
-                  <span class="d-none d-xl-inline-block ms-1 fw-medium user-name-text">{{
-                    data.name
-                  }}</span>
-                  <span class="d-none d-xl-block ms-1 fs-12 user-name-sub-text">{{
-                    data.display_name
-                  }}</span>
+                  <span class="d-none d-xl-inline-block ms-1 fw-medium user-name-text">{{ name }}</span>
+                  <span class="d-none d-xl-block ms-1 fs-12 user-name-sub-text">{{ displayName }}</span>
                 </span>
               </span>
             </button>
             <ul class="dropdown-menu dropdown-menu-end" role="menu" aria-labelledby="profileButton">
-              <h6 class="dropdown-header">Welcome {{ data.name }}!</h6>
+              <h6 class="dropdown-header">Welcome {{ name }}!</h6>
               <div class="dropdown-divider"></div>
+              <router-link :to="{ name: 'user.detail', params: { id: authStore.user.id } }" class="dropdown-item">
+                <i class="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i>
+                <span class="align-middle" data-key="t-profile">Profile</span>
+              </router-link>
               <button class="dropdown-item" @click="signOut">
                 <i class="mdi mdi-logout text-muted fs-16 align-middle me-1"></i>
                 <span class="align-middle" data-key="t-logout">Logout</span>

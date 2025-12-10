@@ -33,7 +33,7 @@ function fetchUser() {
 }
 
 function update(event) {
-  let formData = new FormData(event.target)
+  const formData = new FormData(event.target)
   apiClient
     .put('/settings', formData)
     .then((res) => Swal.fire('Success', res.message, 'success'))
@@ -220,7 +220,7 @@ onMounted(() => {
                 <table class="table table-striped nowrap align-middle fs-12">
                   <tbody>
                     <tr v-for="setting in state.settings" :key="setting.id">
-                      <template v-if="setting.scope == 'danger-zone'">
+                      <template v-if="setting.scope == 'danger_zone'">
                         <td width="25%">
                           <strong>
                             <i class="las la-long-arrow-alt-right me-1"></i>
@@ -235,18 +235,11 @@ onMounted(() => {
                               type="checkbox" value="1" :checked="parseInt(setting.value) == 1" />
                             <input type="hidden" :name="`settings[${setting.name}]`" value="0" />
                           </div>
-                          <MultiSelect v-if="setting.type == 'select_multiple'"
-                            name="telo_godog"
-                            mode="tags" 
-                            placeholder="Select maintainer"
-                            v-model="setting.value" 
-                            :close-on-select="true" 
-                            :searchable="true" 
-                            :object="false"
-                            :delay="300" 
-                            :min-chars="1" 
-                            :options="state.users" />
-                          <input v-if="setting.type == 'select_multiple'" :name="`settings[${setting.name}]`" type="hidden" :value="setting.value">
+                          <MultiSelect v-if="setting.type == 'select_multiple'" name="telo_godog" mode="tags"
+                            placeholder="Select maintainer" v-model="setting.value" :close-on-select="true"
+                            :searchable="true" :object="false" :delay="300" :min-chars="1" :options="state.users" />
+                          <input v-if="setting.type == 'select_multiple'" :name="`settings[${setting.name}]`"
+                            type="hidden" :value="setting.value">
                         </td>
                       </template>
                     </tr>

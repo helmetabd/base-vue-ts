@@ -1,8 +1,8 @@
+
 import { useAuthStore } from '@/stores/auth'
 
-const authStore = useAuthStore()
-
-const checkOwner = (ownerId: number | string) => {
+const checkOwner = (ownerId: number) => {
+  const authStore = useAuthStore()
   if (ownerId == authStore.user.id) {
     return true
   }

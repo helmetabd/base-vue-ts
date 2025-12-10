@@ -1,77 +1,87 @@
-<script>
-export default {
-  name: 'BaseCard',
-  props: {
-    title: {
-      type: [String],
-      default: ''
-    },
-    wrapperClass: {
-      type: String,
-      default: 'col-lg-12'
-    },
-    cardClass: {
-      type: String,
-      default: 'card'
-    },
-    bodyClass: {
-      type: String,
-      default: 'card-body'
-    },
-    headerClass: {
-      type: String,
-      default: 'card-header d-flex align-items-center'
-    },
-    footerClass: {
-      type: String
-    },
-    titleClass: {
-      type: String,
-      default: 'mb-0 text-muted text-uppercase'
-    },
-    tableCard: {
-      type: Boolean,
-      default: false
-    },
-    noFooter: {
-      type: Boolean,
-      default: false
-    },
-    noHeader: {
-      type: Boolean,
-      default: false
-    },
-    noBody: {
-      type: Boolean,
-      default: false
-    },
-    noWrapper: {
-      type: Boolean,
-      default: false
-    },
-    defaultTitle: {
-      type: Boolean,
-      default: false
-    },
-    titleSize: {
-      type: String,
-      default: 'h5'
-    }
+<script setup lang="ts">
+defineProps({
+  title: {
+    type: [String],
+    default: ''
+  },
+  wrapperClass: {
+    type: String,
+    default: 'col-lg-12'
+  },
+  cardClass: {
+    type: String,
+    default: 'card'
+  },
+  bodyClass: {
+    type: String,
+    default: 'card-body'
+  },
+  headerClass: {
+    type: String,
+    default: 'card-header d-flex align-items-center'
+  },
+  footerClass: {
+    type: String
+  },
+  titleClass: {
+    type: String,
+    default: 'mb-0 text-muted text-uppercase'
+  },
+  tableCard: {
+    type: Boolean,
+    default: false
+  },
+  noFooter: {
+    type: Boolean,
+    default: false
+  },
+  noHeader: {
+    type: Boolean,
+    default: false
+  },
+  noBody: {
+    type: Boolean,
+    default: false
+  },
+  noWrapper: {
+    type: Boolean,
+    default: false
+  },
+  defaultTitle: {
+    type: Boolean,
+    default: false
+  },
+  titleSize: {
+    type: String,
+    default: 'h5'
+  },
+  headerStyle: {
+    type: Object,
+    default: () => ({})
   }
-}
+})
+
+// Define slots for TypeScript
+defineSlots<{
+  progressBar?(): any
+  cardHeader?(): any
+  titleIcon?(): any
+  cardButton?(): any
+  customHeader?(): any
+  cardBody?(): any
+  customFooter?(): any
+  cardFooterStart?(): any
+  cardFooterEnd?(): any
+}>()
 </script>
 <template>
   <div :class="noWrapper ? '' : wrapperClass">
     <div :class="cardClass">
       <slot name="progressBar"></slot>
-      <div :class="headerClass" v-if="!noHeader">
+      <div :class="headerClass" v-if="!noHeader" :style="headerStyle">
         <slot name="cardHeader"></slot>
-        <component
-          :is="titleSize"
-          v-if="title"
-          :class="defaultTitle ? 'card-title mb-0' : titleClass"
-          class="flex-grow-1"
-        >
+        <component :is="titleSize" v-if="title" :class="defaultTitle ? 'card-title mb-0' : titleClass"
+          class="flex-grow-1">
           <slot name="titleIcon"></slot>{{ title }}
         </component>
         <div class="flex-shrink-0">

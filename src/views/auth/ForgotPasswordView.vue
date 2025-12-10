@@ -1,39 +1,29 @@
-<script>
+<script setup lang="ts">
 import Lottie from '@/components/widgets/lottie.vue'
 import animationData from '@/components/widgets/rhvddzym.json'
-import apiClient from '../../service/ApiClientService'
+import apiClient from '@/service/ApiClientService'
 import Swal from 'sweetalert2'
-export default {
-  components: { lottie: Lottie },
-  data() {
-    return {
-      email: '',
-      submitted: false,
-      error: null,
-      tryingToReset: false,
-      isResetError: false,
-      processing: false,
-      defaultOptions: { animationData: animationData }
+import { ref } from 'vue'
+
+const email = ref('')
+const submitted = ref(false)
+const error = ref<any>(null)
+const tryingToReset = ref(false)
+const isResetError = ref(false)
+const processing = ref(false)
+const defaultOptions = { animationData }
+
+const handleResetLink = async () => {
+  processing.value = true
+  try {
+    await apiClient.post('/forgot-password', { email: email.value })
+    Swal.fire({ text: 'Berhasil Mengirim Link Reset Password, Sialahkan Periksa Email Anda!', icon: 'info' })
+  } catch (e: any) {
+    if (e.response) {
+      Swal.fire('Error', e.response?.data?.message, 'error')
     }
-  },
-  methods: {
-    async handleResetLink() {
-      this.processing = true
-      apiClient
-        .post('/forgot-password', { email: this.email })
-        .then(() => {
-          Swal.fire({
-            text: 'Berhasil Mengirim Link Reset Password, Sialahkan Periksa Email Anda!',
-            icon: 'info'
-          })
-        })
-        .catch((e) => {
-          if (e.response) {
-            Swal.fire('Error', e.response?.data?.message, 'error')
-          }
-        })
-        .finally(() => (this.processing = false))
-    }
+  } finally {
+    processing.value = false
   }
 }
 </script>

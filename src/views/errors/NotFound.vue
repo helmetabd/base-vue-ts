@@ -1,7 +1,5 @@
-<script>
-export default {
-  name: "NotFound",
-};
+<script setup lang="ts">
+const currentYear = new Date().getFullYear()
 </script>
 <template>
   <div class="auth-page-wrapper pt-5">
@@ -55,7 +53,7 @@ export default {
         <div class="row">
           <div class="col col-lg-12" lg="12">
             <div class="text-center">
-                <p class="mb-0 text-muted">&copy; {{ new Date().getFullYear() }} Arjuna V2. by IT Gawebecik</p>
+                <p class="mb-0 text-muted">&copy; {{ currentYear }} Arjuna V2. by IT Gawebecik</p>
             </div>
           </div>
         </div>

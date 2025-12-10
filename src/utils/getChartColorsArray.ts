@@ -11,7 +11,8 @@ const getChartColorsArray = (colors: string) => {
     } else {
       const val = value.split(',')
       if (val.length == 2) {
-        let rgbaColor = getComputedStyle(document.documentElement).getPropertyValue(val[0])
+        const prop = val[0] as string
+        let rgbaColor = getComputedStyle(document.documentElement).getPropertyValue(prop)
         rgbaColor = 'rgba(' + rgbaColor + ',' + val[1] + ')'
         return rgbaColor
       } else {

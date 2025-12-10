@@ -3,36 +3,9 @@ import apiClient from "./ApiClientService";
 import type {
   Dashboard,
   PaginationType,
-  ResponseRaw,
   ResponseUtils,
 } from "@/interfaces/Utils";
 import type { AxiosError } from "axios";
-
-export async function searchLocation(field: any, search: any, parent: any) {
-  return apiClient
-    .get(
-      `/utilities/search/location?field=${field}&search=${search}&parent_id=${parent}`
-    )
-    .then((res) => res.data);
-}
-
-export async function searchEmployee(search: any) {
-  return apiClient
-    .get(`/utilities/select-employee`, { params: { name: search } })
-    .then((res) => res.data);
-}
-
-export async function getPandawaUser(params: string) {
-  return apiClient
-    .get(`/utilities/get-pandawa-user?pandawa_email=${params}`)
-    .then((res) => res.data);
-}
-
-export async function searchEmployeeNumber(type: any) {
-  return apiClient
-    .get(`/utilities/get-employee-numbers`, { params: { group_id: type } })
-    .then((res) => res.data);
-}
 
 export async function searchParams(url: string) {
   return apiClient
@@ -53,45 +26,28 @@ export async function fetchIndex(
   url: string,
   params: any
 ): Promise<{ data: any[]; pagination: PaginationType }> {
-  let data: any[] = [];
-  let pagination = {} as PaginationType;
+  let data: any[] = []
+  let pagination = {} as PaginationType
   try {
-    const result: ResponseUtils = await apiClient.get(url, { params });
-    if(!result?.items){
-      data = [];
-    } else {
-      data = result?.items;
-    }
+    const result: ResponseUtils = await apiClient.get(url, { params })
 
-    const entries = entriesRange(
-      result?.pagination.currentPage,
-      result?.pagination.perPage,
-      result?.pagination.total
-    );
+    data = result.data
 
     pagination = {
-      lastPage: result?.pagination.lastPage,
-      currentPage: result?.pagination.currentPage,
-      from: entries.start,
-      to: entries.end,
-      total: result?.pagination.total,
-      links: result?.links,
-      lastPageUrl: result?.pagination.lastPageUrl,
-      nextPageUrl: result?.pagination.nextPageUrl,
-      prevPageUrl: result?.pagination.prevPageUrl,
-    };
+      lastPage: result.meta.last_page,
+      currentPage: result.meta.current_page,
+      from: result.meta.from,
+      to: result.meta.to,
+      total: result.meta.total,
+      links: result.meta.links,
+      lastPageUrl: result.links.last,
+      nextPageUrl: result.links.next,
+      prevPageUrl: result.links.prev
+    }
   } catch (e) {
-    responseHelper("error", e as AxiosError); // Ensure this function exists
+    responseHelper('error', e as AxiosError) // Ensure this function exists
   }
-  return { data, pagination };
-}
-
-export async function crmList() {
-  return apiClient.get("/utils/get-crm-staffs").then((res) => res.data);
-}
-
-export async function productList() {
-  return apiClient.get("/utils/get-products").then((res) => res.data);
+  return { data, pagination }
 }
 
 export async function fetchDashboard(params: any): Promise<Dashboard> {
@@ -170,4 +126,40 @@ export async function fetchDashboard(params: any): Promise<Dashboard> {
     responseHelper("error", error as AxiosError);
   }
   return { ...data };
+}
+
+export async function storeImage(
+  url: string,
+  params: object
+): Promise<{ url: string; uploaded: number; fileName: string }> {
+  let resultImage: { url: string; uploaded: number; fileName: string } = {
+    url: '',
+    uploaded: 0,
+    fileName: ''
+  }
+  try {
+    const result: { url: string; uploaded: number; fileName: string } = await apiClient.post(
+      url,
+      params,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    )
+    resultImage = result
+  } catch (error) {
+    responseHelper('error', error as AxiosError)
+  }
+  return resultImage
+}
+
+export async function deleteImage(url: string, imageUrl: string) {
+  return apiClient
+    .delete(`${url}`, { data: { path: imageUrl } })
+    .then((res) => res.data)
+    .catch((e) => {
+      responseHelper('error', e)
+      throw e
+    })
 }

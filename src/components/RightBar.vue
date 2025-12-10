@@ -46,7 +46,7 @@ onMounted(() => {
       }
     }
   }
-  var setpreloader = document.getElementById('preloader')
+  const setpreloader = document.getElementById('preloader')
   if (useStorage('data-preloader').value && useStorage('data-preloader').value == 'enable') {
     document.documentElement.setAttribute('data-preloader', 'enable')
     if (setpreloader) {
@@ -523,15 +523,24 @@ watch(
       <div class="offcanvas-body p-0">
         <simpleBar class="h-100">
           <div class="p-4">
-            <h6 class="mb-0 fw-semibold text-uppercase fs-12">Layout</h6>
-            <p class="text-muted">Choose your layout</p>
+            <!-- <h6 class="mb-0 fw-semibold text-uppercase fs-12">Layout</h6>
+            <p class="text-muted">Choose your layout</p> -->
 
-            <div class="row gy-3">
+            <!-- <div class="row gy-3">
               <div class="col" cols="4">
                 <div class="form-check card-radio">
-                  <input id="customizer-layout01" name="data-layout" type="radio" value="vertical"
-                    class="form-check-input" v-model="layoutType" />
-                  <label class="form-check-label p-0 avatar-md w-100 shadow-sm" for="customizer-layout01">
+                  <input
+                    id="customizer-layout01"
+                    name="data-layout"
+                    type="radio"
+                    value="vertical"
+                    class="form-check-input"
+                    v-model="layoutType"
+                  />
+                  <label
+                    class="form-check-label p-0 avatar-md w-100 shadow-sm"
+                    for="customizer-layout01"
+                  >
                     <span class="d-flex gap-1 h-100">
                       <span class="flex-shrink-0">
                         <span class="bg-light d-flex h-100 flex-column gap-1 p-1">
@@ -552,29 +561,62 @@ watch(
                 </div>
                 <h5 class="fs-13 text-center mt-2">Vertical</h5>
               </div>
-              <div class="col col-4">
+              <div class="col" cols="4">
                 <div class="form-check card-radio">
-                  <input id="customizer-layout02" name="data-layout" type="radio" value="horizontal"
-                    class="form-check-input" v-model="layoutType" />
-                  <label class="form-check-label p-0 avatar-md w-100" for="customizer-layout02">
-                    <span class="d-flex h-100 flex-column gap-1">
-                      <span class="bg-light d-flex p-1 gap-1 align-items-center">
-                        <span class="d-block p-1 bg-primary-subtle rounded me-1"></span>
-                        <span class="d-block p-1 pb-0 px-2 bg-primary-subtle ms-auto"></span>
-                        <span class="d-block p-1 pb-0 px-2 bg-primary-subtle"></span>
+                  <input
+                    id="customizer-layout03"
+                    name="data-layout"
+                    type="radio"
+                    value="twocolumn"
+                    class="form-check-input"
+                    v-model="layoutType"
+                  />
+                  <label
+                    class="form-check-label p-0 avatar-md w-100 shadow-sm"
+                    for="customizer-layout03"
+                  >
+                    <span class="d-flex gap-1 h-100">
+                      <span class="flex-shrink-0">
+                        <span class="bg-light d-flex h-100 flex-column gap-1">
+                          <span class="d-block p-1 bg-primary-subtle mb-2"></span>
+                          <span class="d-block p-1 pb-0 bg-primary-subtle"></span>
+                          <span class="d-block p-1 pb-0 bg-primary-subtle"></span>
+                          <span class="d-block p-1 pb-0 bg-primary-subtle"></span>
+                        </span>
                       </span>
-                      <span class="bg-light d-block p-1"></span>
-                      <span class="bg-light d-block p-1 mt-auto"></span>
+                      <span class="flex-shrink-0">
+                        <span class="bg-light d-flex h-100 flex-column gap-1 p-1">
+                          <span class="d-block p-1 px-2 pb-0 bg-primary-subtle"></span>
+                          <span class="d-block p-1 px-2 pb-0 bg-primary-subtle"></span>
+                          <span class="d-block p-1 px-2 pb-0 bg-primary-subtle"></span>
+                          <span class="d-block p-1 px-2 pb-0 bg-primary-subtle"></span>
+                        </span>
+                      </span>
+                      <span class="flex-grow-1">
+                        <span class="d-flex h-100 flex-column">
+                          <span class="bg-light d-block p-1"></span>
+                          <span class="bg-light d-block p-1 mt-auto"></span>
+                        </span>
+                      </span>
                     </span>
                   </label>
                 </div>
-                <h5 class="fs-13 text-center mt-2">Horizontal</h5>
+                <h5 class="fs-13 text-center mt-2">Two Column</h5>
               </div>
               <div class="col" cols="4">
                 <div class="form-check card-radio">
-                  <input id="customizer-layout04" name="data-layout" type="radio" value="semibox"
-                    class="form-check-input" v-model="layoutType" />
-                  <label class="form-check-label p-0 avatar-md w-100 shadow-sm" for="customizer-layout04">
+                  <input
+                    id="customizer-layout04"
+                    name="data-layout"
+                    type="radio"
+                    value="semibox"
+                    class="form-check-input"
+                    v-model="layoutType"
+                  />
+                  <label
+                    class="form-check-label p-0 avatar-md w-100 shadow-sm"
+                    for="customizer-layout04"
+                  >
                     <span class="d-flex gap-1 h-100">
                       <span class="flex-shrink-0 p-1">
                         <span class="bg-light d-flex h-100 flex-column gap-1 p-1">
@@ -595,7 +637,7 @@ watch(
                 </div>
                 <h5 class="fs-13 text-center mt-2">Semi Box</h5>
               </div>
-            </div>
+            </div> -->
 
             <h6 class="mt-4 mb-0 fw-semibold text-uppercase fs-12">Color Scheme</h6>
             <p class="text-muted">Choose Light or Dark Scheme.</p>

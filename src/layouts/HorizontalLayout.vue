@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import router from '@/router'
 import { watch, onMounted, onUnmounted, provide, ref, reactive } from 'vue'
 import { useRoute } from 'vue-router'
 import NavBar from "@/components/NavBar.vue"
@@ -16,7 +15,6 @@ import type { Menu } from '@/interfaces/Utils'
 const authStore = useAuthStore()
 const permissions = authStore.permissions;
 const route = useRoute()
-const isMenuCondensed = ref(false)
 const data = reactive({
   menus: menu() as Menu[],
 })

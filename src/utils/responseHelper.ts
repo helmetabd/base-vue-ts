@@ -13,8 +13,10 @@ export function responseHelper(
   // res?: AxiosResponse | AxiosError, // Made optional and second
   res?: ResponseData | AxiosError, // Made optional and second
   message?: string,
-  onConfirm?: Function | void,
-  cancelButton: boolean = false
+  onConfirm?: () => void,
+  cancelButton: boolean = false,
+  options?: object
+
 ): void {
   const isAxiosError = (error: any): error is AxiosError => {
     return !!(error && error.isAxiosError)
@@ -30,7 +32,9 @@ export function responseHelper(
           : message || 'Berhasil Menyimpan Data',
       icon: 'success',
       showCancelButton: cancelButton, // Remove cancel button for success
-      confirmButtonText: 'OK'
+      confirmButtonText: 'OK',
+      ...options
+
     }).then((e) => {
       if (e.isConfirmed && typeof onConfirm === 'function') {
         onConfirm() // Execute the custom callback if the user confirms

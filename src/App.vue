@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
 import router from './router';
+
+const value = router.currentRoute.value.path
 </script>
 
 <template>
-  <RouterView :key="router.currentRoute.value.path"/>
+  <RouterView :key="value" />
 </template>
 
 <style>

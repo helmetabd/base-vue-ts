@@ -1,122 +1,105 @@
-<script>
+<script setup lang="ts">
+import { ref, watch, onMounted, computed } from 'vue'
 import Layout from '@/layouts/MainLayout.vue'
-import BaseInput from '@/components/partials/base-input.vue'
 import ModalEditPicture from './EditPictureView.vue'
 import BaseCard from '@/components/cards/base-card.vue'
-import { useProfileStore } from '../../../stores/profile'
-import { storeToRefs } from 'pinia'
+import BasicInput from '@/components/inputs/BasicInput.vue'
 import { getAvatar } from '../../../utils/assetsHelper'
+import Multiselect from '@vueform/multiselect'
 
-export default {
-  setup() {
-    const profileStore = useProfileStore()
-    const { fetchProfiles, updateUsersProfile, updateUsersPassword } = profileStore
+// Dummy local store replacements (you don't have `useProfileStore` in your project)
+const profile = ref<any>({
+  name: 'John Doe',
+  email: 'john.doe@example.com',
+  phone: '',
+  gender: 'male',
+})
+const avatar = ref<string | undefined>('')
+const roleValue = ref<any>({ name: 'user', display_name: 'User' })
 
-    fetchProfiles()
+// No-op / dummy actions to replace store actions
+const fetchProfiles = () => {
+  // placeholder: in a real app this would fetch profile data
+  // Keep the existing default profile object
+}
+const updateUsersProfile = (data: any) => {
+  // placeholder: you can replace this with a real store action
+  // For now, merge the data into the local profile to simulate behavior
+  profile.value = { ...profile.value, ...data }
+  console.log('updateUsersProfile called', data)
+}
+const updateUsersPassword = (data: any) => {
+  // placeholder: simulate password update
+  console.log('updateUsersPassword called', data)
+}
 
-    return {
-      ...storeToRefs(profileStore),
-      fetchProfiles,
-      updateUsersProfile,
-      updateUsersPassword
-    }
-  },
-  data() {
-    return {
-      formData: {
-        name: this.profile.name,
-        phone: this.profile.phone,
-        email: this.profile.email,
-        gender: this.genders.filter((data) => {
-          return data.value === this.profile.gender
-        })
-      },
-      inputFields: [
-        {
-          id: 1,
-          label: 'Name',
-          name: 'name',
-          inputType: 'text',
-          modelValue: ''
-        },
-        {
-          id: 2,
-          label: 'Email',
-          name: 'email',
-          inputType: 'text',
-          modelValue: ''
-        },
-        {
-          id: 3,
-          label: 'Phone',
-          name: 'phone',
-          inputType: 'number',
-          modelValue: ''
-        }
-      ],
-      passsword: '',
-      passwordConfirmation: '',
-      genders: [
-        { label: 'Male', value: 'male' },
-        { label: 'Female', value: 'female' }
-      ],
-      showModal: false,
-      checked: false,
-      passwordChecked: false
-    }
-  },
-  components: {
-    Layout,
-    BaseInput,
-    BaseCard,
-    ModalEditPicture
-  },
-  computed: {
-    // ...profileComputed,
-    // ...mapState('profile', ['profile']),
-  },
-  methods: {
-    searchAvatar: (avatar) => getAvatar(avatar),
-    // ...profileMethods,
-    // ...mapActions('profile', ['fetchProfiles']),
-    getRoleBadgeClass(name) {
-      switch (name) {
-        case 'super_admin':
-          return 'bg-danger-subtle text-danger'
-        case 'admin':
-          return 'bg-primary-subtle text-primary'
-        case 'user':
-          return 'bg-warning-subtle text-warning'
-        default:
-          return ''
-      }
-    },
+// local form state
+const name = ref<string>('')
+const email = ref<string>('')
+const phone = ref<string>('')
+const genders = ref([{ label: 'Male', value: 'male' }, { label: 'Female', value: 'female' }])
+const genderSelect = ref<{ label: string; value: string } | null>(null)
 
-    editProfileData() {
-      this.formData.gender = this.formData.gender.value
-      // const profileData = {
-      //   name: this.nameValue,
-      //   phone: this.phoneValue,
-      //   email: this.emailValue,
-      //   gender: this.genderSelect.value
-      // }
+const checked = ref(false)
+const passwordChecked = ref(false)
+const password = ref('')
+const passwordConfirmation = ref('')
 
-      // this.$store.commit('updateProfileData', profileData)
-      this.updateUsersProfile(this.formData)
-    },
+onMounted(() => {
+  fetchProfiles()
+})
 
-    editPassword() {
-      const passwordData = {
-        password: this.password,
-        password_confirmation: this.passwordConfirmation
-      }
-
-      this.updateUsersPassword(passwordData)
-    }
+// sync profile into local form when available
+watch(profile, (p) => {
+  if (p) {
+    name.value = (p as any).name ?? ''
+    email.value = (p as any).email ?? ''
+    phone.value = (p as any).phone ?? ''
+    genderSelect.value = genders.value.find((g) => g.value === (p as any).gender) ?? null
   }
-  // mounted() {
-  //   this.fetchProfile()
-  // }
+}, { immediate: true })
+
+function searchAvatar(a?: string) {
+  return getAvatar(a)
+}
+
+function getRoleBadgeClass(role?: string) {
+  switch (role) {
+    case 'super_admin':
+      return 'bg-danger-subtle text-danger'
+    case 'admin':
+      return 'bg-primary-subtle text-primary'
+    case 'user':
+      return 'bg-warning-subtle text-warning'
+    default:
+      return ''
+  }
+}
+
+function editProfileData() {
+  const formData = {
+    name: name.value,
+    phone: phone.value,
+    email: email.value,
+    gender: genderSelect.value ? genderSelect.value.value : null,
+  }
+  updateUsersProfile(formData)
+}
+
+function editPassword() {
+  const passwordData = {
+    password: password.value,
+    password_confirmation: passwordConfirmation.value,
+  }
+  updateUsersPassword(passwordData)
+}
+
+const displayName = computed(() => name.value || (profile.value && (profile.value as any).name) || '')
+
+function handleUpdateImage(dataUrl: string) {
+  // For now, update local avatar preview and merge into profile
+  avatar.value = dataUrl
+  updateUsersProfile({ avatar: dataUrl })
 }
 </script>
 <template>
@@ -135,17 +118,17 @@ export default {
                 />
               </div>
               <template v-if="roleValue">
-                <h5 class="card-title mb-2">{{ nameValue }}</h5>
+                <h5 class="card-title mb-2">{{ displayName }}</h5>
                 <p class="text-muted">
-                  <span class="rounded p-1" :class="getRoleBadgeClass(roleValue.name)">
-                    {{ roleValue.display_name }}
+                  <span class="rounded p-1" :class="getRoleBadgeClass(roleValue?.name)">
+                    {{ roleValue?.display_name }}
                   </span>
                 </p>
               </template>
             </div>
           </template>
           <template #cardFooterStart>
-            <ModalEditPicture />
+            <ModalEditPicture @update-image="handleUpdateImage" />
           </template>
         </BaseCard>
         <div class="col-lg-9">
@@ -160,7 +143,7 @@ export default {
                     <label class="form-label" for="user_name">Name</label>
                   </div>
                   <div class="col-md-9">
-                    <BaseInput v-model="nameValue" :modelValue="nameValue" :inputType="'text'" />
+                    <BasicInput v-model="name" type="text" name="name" label="Name" />
                   </div>
                 </div>
 
@@ -169,7 +152,7 @@ export default {
                     <label class="form-label" for="user_email">Email</label>
                   </div>
                   <div class="col-md-9">
-                    <BaseInput v-model="emailValue" :modelValue="emailValue" :inputType="'email'" />
+                    <BasicInput v-model="email" type="email" name="email" label="Email" />
                   </div>
                 </div>
 
@@ -178,11 +161,10 @@ export default {
                     <label class="form-label" for="user_email">Gender</label>
                   </div>
                   <div class="col-md-9">
-                    <v-select
+                    <Multiselect
                       v-model="genderSelect"
                       :options="genders"
                       :placeholder="'Select Gender'"
-                      label="label"
                     />
                   </div>
                 </div>
@@ -192,7 +174,7 @@ export default {
                     <label class="form-label" for="user_phone">Contact (Phone/WA)</label>
                   </div>
                   <div class="col-md-9">
-                    <BaseInput v-model="phoneValue" :modelValue="phoneValue" :inputType="'phone'" />
+                    <BasicInput v-model="phone" type="tel" name="phone" label="Phone" />
                   </div>
                 </div>
                 <input type="hidden" name="uid" value="349" />

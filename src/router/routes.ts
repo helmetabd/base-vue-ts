@@ -94,6 +94,26 @@ const routes: RouteRecordRaw[] = [
     path: '/user',
     children: [
       {
+        path: 'privilege-template',
+        name: 'user.privilege-template',
+        meta: {
+          title: 'Privilege Template',
+          authRequired: true,
+          permissionRequired: 'user.users'
+        },
+        component: () => import('@/views/pages/users/PrivilegeTemplate.vue')
+      },
+      {
+        path: 'logs',
+        name: 'user.logs',
+        meta: {
+          title: 'Logs',
+          authRequired: true,
+          permissionRequired: 'user.logs'
+        },
+        component: () => import('@/views/pages/users/PrivilegeTemplate.vue')
+      },
+      {
         path: '',
         name: 'user.index',
         meta: {
@@ -113,6 +133,16 @@ const routes: RouteRecordRaw[] = [
         },
         component: () => import('@/views/pages/users/UserDetail.vue')
       },
+      {
+        path: ':id/privileges',
+        name: 'user.privileges',
+        meta: {
+          title: 'User Privileges',
+          authRequired: true,
+          permissionRequired: 'user.users'
+        },
+        component: () => import('@/views/pages/users/UserPrivilege.vue')
+      }
     ]
   },
 

@@ -48,14 +48,14 @@ function initActiveMenu() {
 function toggleMenu() {
   document.body.classList.toggle('sidebar-enable')
   if (window.screen.width >= 992) {
-    // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     router.afterEach((_routeTo, _routeFrom) => {
       document.body.classList.remove('sidebar-enable')
       document.body.classList.remove('vertical-collpsed')
     })
     document.body.classList.toggle('vertical-collpsed')
   } else {
-    // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     router.afterEach((_routeTo, _routeFrom) => {
       document.body.classList.remove('sidebar-enable')
     })
@@ -114,7 +114,7 @@ onUnmounted(() => {
               <img src="@/assets/images/arjuna-sm.png" alt="" height="22" />
             </span>
             <span class="logo-lg">
-              <img src="@/assets/images/logo-light.png" alt="" height="40" />
+              <img src="@/assets/images/logo-dark.png" alt="" height="17" />
             </span>
           </router-link>
           <!-- Light Logo-->
@@ -123,7 +123,7 @@ onUnmounted(() => {
               <img src="@/assets/images/arjuna-sm.png" alt="" height="22" />
             </span>
             <span class="logo-lg">
-              <img src="@/assets/images/logo-light.png" alt="" height="40" />
+              <img src="@/assets/images/logo-light.png" alt="" height="17" />
             </span>
           </router-link>
           <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover"
@@ -154,6 +154,6 @@ onUnmounted(() => {
       </div>
       <PageFooter />
     </div>
-    <RightBar />
+    <RightBar hidden />
   </div>
 </template>

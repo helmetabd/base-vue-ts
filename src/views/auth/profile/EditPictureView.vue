@@ -1,102 +1,73 @@
-<script>
+<script setup lang="ts">
 /* eslint-disable */
-import { Cropper, CircleStencil, Preview } from "vue-advanced-cropper";
-import "vue-advanced-cropper/dist/style.css";
+import { ref } from 'vue'
+import { Cropper, CircleStencil, Preview } from 'vue-advanced-cropper'
+import 'vue-advanced-cropper/dist/style.css'
 
-export default {
-  setup(){
-    const profileStore = useProfileStore()
-    const { updateUsersImage } = profileStore
+const emit = defineEmits<{ (e: 'update-image', dataUrl: string): void }>()
 
-    return {
-      updateUsersImage
+const checked = ref(false)
+const showModal = ref(false)
+const preview = ref<string | null>(null)
+const croppedImage = ref<string | null>(null)
+const pictureSelected = ref<File | null>(null)
+const result = ref<{ coordinates: any; image: any }>({ coordinates: null, image: null })
+
+function modalOpen() {
+  showModal.value = true
+}
+
+function editData() {
+  const res = result.value
+  if (res.image) {
+    const cropper = (refs.cropper as any) as { getResult: () => any }
+    const r = cropper.getResult()
+    const canvas = r?.canvas
+    if (canvas) {
+      // emit data URL so parent can update UI or upload
+      const dataUrl = canvas.toDataURL('image/jpeg')
+      emit('update-image', dataUrl)
     }
-  },
-  components: {
-    Cropper,
-    CircleStencil,
-    Preview,
-  },
-  data() {
-    return {
-      checked: false,
-      showModal: false,
-      preview: null,
-      croppedImage: null,
-      pictureSelected: null,
-      result: {
-        coordinates: null,
-        image: null,
-      },
-    };
-  },
-  computed: {
-    ...profileComputed,
-  },
-  methods: {
-    ...profileMethods,
+    showModal.value = false
+  } else {
+    console.error('No valid image data available for update')
+  }
+}
 
-    modalOpen() {
-      this.showModal = true;
-    },
+function imagePreview(event: Event) {
+  const input = event.target as HTMLInputElement
+  if (input.files && input.files[0]) {
+    pictureSelected.value = input.files[0]
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      preview.value = e.target?.result as string
+    }
+    reader.readAsDataURL(input.files[0])
+  }
+}
 
-    editData() {
-      const result = this.result;
+function onChange({ coordinates, image }: any) {
+  result.value = { coordinates, image }
+}
 
-      if (result.image) {
-        const { canvas } = this.$refs.cropper.getResult();
+function cropImage() {
+  const cropper = (refs.cropper as any) as { getResult: () => any }
+  const r = cropper.getResult()
+  editData()
+  const newTab = window.open()
+  if (newTab) newTab.document.body.innerHTML = `<img src="${r.canvas.toDataURL('image/jpeg')}"></img>`
+}
 
-        if (canvas) {
-          const form = new FormData();
-          canvas.toBlob((blob) => {
-            form.append("avatar", blob);
-            this.updateUsersImage(form);
-          }, "image/jpeg");
-        }
+function reset() {
+  pictureSelected.value = null
+  preview.value = null
+}
 
-        this.showModal = false;
-      } else {
-        console.error("No valid image data available for update");
-      }
-    },
+const refs: Record<string, any> = {}
 
-    imagePreview: function (event) {
-      var input = event.target;
-      if (input.files) {
-        this.pictureSelected = input.files[0];
-        var reader = new FileReader();
-        reader.onload = (e) => {
-          this.preview = e.target.result;
-        };
-        this.pictureSelected = input.files[0];
-        reader.readAsDataURL(input.files[0]);
-      }
-    },
-
-    onChange({ coordinates, image }) {
-      this.result = {
-        coordinates,
-        image,
-      };
-    },
-
-    cropImage() {
-      const result = this.$refs.cropper.getResult();
-      this.editData(result.image);
-      const newTab = window.open();
-      newTab.document.body.innerHTML = `<img src="${result.canvas.toDataURL(
-        "image/jpeg"
-      )}"></img>`;
-    },
-
-    reset: function () {
-      this.pictureSelected = null;
-      this.preview = null;
-      this.image_list = [];
-      this.preview_list = [];
-    },
-  },
-};
+function handleCheckboxChange(e?: Event) {
+  // no-op for now; checkbox v-model keeps `checked` in sync
+}
 </script>
 <template>
   <div>
@@ -126,7 +97,7 @@ export default {
                 :stencil-props="{
                   aspectRatio: 1,
                 }"
-                :stencil-component="$options.components.CircleStencil"
+                :stencil-component="CircleStencil"
               />
               <preview
                 :width="120"
@@ -146,7 +117,7 @@ export default {
               @change="imagePreview"
             />
           </div>
-          <div class="col mt-4" lg="5">
+            <div class="col mt-4" lg="5">
             <input
               type="checkbox"
               id="checkboxEditPassword"

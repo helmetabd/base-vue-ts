@@ -14,12 +14,25 @@ const apiClient = axios.create({
   }
 })
 
-function isResponseUtils(obj: any): obj is ResponseRaw {
-  return obj && obj.data && obj.data?.pagination?.currentPage !== undefined && obj.data?.links !== undefined
+function isResponseUtils(obj: any): obj is ResponseUtils {
+  return obj && obj.meta && obj.meta.current_page !== undefined && obj.links !== undefined
 }
 
 function isDashboard(obj: any): obj is Dashboard {
   return obj && obj.total_employees && obj.average_age && obj.annual_growth
+}
+
+function isImageUpload(obj: any): obj is { url: string; uploaded: number; fileName: string } {
+  return (
+    obj &&
+    typeof obj.url === 'string' &&
+    typeof obj.uploaded === 'number' &&
+    typeof obj.fileName === 'string'
+  )
+}
+
+function isEditMode(url: string): boolean {
+  return url.includes('/edit')
 }
 
 apiClient.interceptors.request.use(
@@ -37,11 +50,15 @@ apiClient.interceptors.response.use(
   (response) => {
     const responseData = response.data
     if (isResponseUtils(responseData)) {
-      return responseData.data as ResponseUtils // Return as ResponseUtils if it matches
+      return responseData as ResponseUtils // Return as ResponseUtils if it matches
     } else if (isDashboard(responseData)) {
       return responseData as Dashboard // Return the raw Axios data if it doesn't match
+    } else if (isImageUpload(responseData)) {
+      return responseData as { url: string; uploaded: number; fileName: string }
+    } else if (isEditMode(response.config.url || '')) {
+      return response
     } else {
-      return responseData
+      return responseData // Return the raw Axios data if it doesn't match
     }
   },
   (error) => {
@@ -50,8 +67,6 @@ apiClient.interceptors.response.use(
     }
 
     const status = error.response?.status
-    console.log('Error status:', status)
-    console.log('Error response:', error.response)
 
     if (status === 401) {
       localStorage.clear()

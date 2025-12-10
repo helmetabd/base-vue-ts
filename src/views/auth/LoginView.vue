@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useForm } from 'vee-validate'
+import { useField, useForm } from 'vee-validate'
 import * as yup from 'yup'
 import router from '../../router'
 import { reactive, ref } from 'vue'
@@ -7,7 +7,7 @@ import { useAuthStore } from '../../stores/auth'
 import { storeToRefs } from 'pinia'
 const state = reactive({
   submitted: false,
-  authError: null,
+  authError: '',
   tryingToLogIn: false,
   isAuthError: false,
   processing: false,
@@ -105,10 +105,6 @@ const state = reactive({
     retina_detect: true
   }
 })
-const submitForm = reactive({
-  user_identity: null,
-  password: ''
-})
 const showPassword = ref(false)
 
 const authStore = useAuthStore()
@@ -129,24 +125,33 @@ const togglePasswordVisibility = () => {
 }
 
 // Use vee-validate form
-const { handleSubmit, defineField, errors } = useForm({
-  validationSchema,
-  initialValues: {
-    user_identity: '',
-    password: ''
-  }
-})
-
-const [user_identity, user_identityAttrs] = defineField('user_identity')
-const [password, passwordAttrs] = defineField('password')
+const { handleSubmit, errors } = useForm({ validationSchema: validationSchema })
+const { value: user_identity } = useField<string | null>('user_identity')
+const { value: password } = useField<string>('password')
 
 const signIn = handleSubmit(async (values) => {
-  let loginData = {
-    email: values.user_identity,
-    password: values.password
+  try {
+    state.processing = true
+    const loginData = {
+      email: values.user_identity,
+      password: values.password
+    }
+    await authStore.signIn(loginData)
+    // Only navigate when signIn actually set a token; the store handles errors
+    if (authStore.token) {
+      router.push({ name: 'dashboard' })
+    } else {
+      state.authError = authStore.error || 'Login failed'
+      state.isAuthError = true
+    }
+  } catch (e: any) {
+    state.authError = e.response?.data?.message || e.message
+    state.isAuthError = true
+  } finally {
+    state.processing = false
   }
-  authStore.signIn(loginData).then(() => router.replace({ name: 'dashboard' }))
 })
+const appName = ref(import.meta.env.VITE_APP_NAME);
 </script>
 
 <template>
@@ -187,8 +192,7 @@ const signIn = handleSubmit(async (values) => {
                     <div class="mb-3">
                       <label for="user_identity" class="form-label">User Identity</label>
                       <input type="text" class="form-control" :class="{ 'is-invalid': errors.user_identity }"
-                        id="user_identity" placeholder="Enter Email / Phone / NIP" v-model="user_identity"
-                        v-bind="user_identityAttrs" />
+                        id="user_identity" placeholder="Enter Email / Phone / NIP" v-model="user_identity" required />
                       <div v-if="errors.user_identity" class="invalid-feedback">
                         <span>{{ errors.user_identity }}</span>
                       </div>
@@ -199,8 +203,7 @@ const signIn = handleSubmit(async (values) => {
                       <div class="position-relative auth-pass-inputgroup mb-3">
                         <input :type="showPassword ? 'text' : 'password'" class="form-control pe-5 password-input"
                           :class="{ 'is-invalid': errors.password }" @paste.prevent placeholder="Enter password"
-                          id="password-input" aria-describedby="passwordInput" v-model="password"
-                          v-bind="passwordAttrs">
+                          id="password-input" aria-describedby="passwordInput" v-model="password" required />
                         <button
                           class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-addon"
                           type="button" @click="togglePasswordVisibility">
@@ -228,7 +231,7 @@ const signIn = handleSubmit(async (values) => {
             </div>
             <div class="mt-4 text-center">
               <p class="mb-0">
-                <i class="ri-copyright-line"></i> {{ new Date().getFullYear() }} Siwa Manager. by IT
+                <i class="ri-copyright-line"></i> {{ new Date().getFullYear() }} {{ appName }}. by IT
                 GBNA
               </p>
             </div>

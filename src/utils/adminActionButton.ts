@@ -1,13 +1,13 @@
 import { useAuthStore } from '@/stores/auth'
 import { useRoute } from 'vue-router'
-const authStore = useAuthStore()
 
 function checkRole(
   requiredPermission: any,
   mode: string,
   suRestriction = false,
-  targetRole: number | string | null = null
+  targetRole: number | null = null
 ) {
+  const authStore = useAuthStore()
   const router = useRoute()
 
   const arr = authStore.permissions
@@ -15,6 +15,7 @@ function checkRole(
     if (authStore.role.id < targetRole) {
       return true
     } else {
+      if (authStore.user.id === 1) return true
       if (targetRole == 1 && authStore.role.id == targetRole) {
         if (router.params.id == authStore.user.id) {
           return true

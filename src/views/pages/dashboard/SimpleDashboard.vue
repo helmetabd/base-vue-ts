@@ -7,8 +7,8 @@ import { getAvatar } from '@/utils/assetsHelper'
 import 'simplebar-vue/dist/simplebar.min.css'
 import { useAuthStore } from '@/stores/auth'
 import SmallCard from '@/components/cards/small-card.vue'
-import checkPermission from '@/utils/checkPermission'
 import menu from '@/config/menu'
+import checkPermission from '@/utils/checkPermission'
 
 const authStore = useAuthStore()
 const avatar = (avatar: string | null | undefined) => getAvatar(avatar)

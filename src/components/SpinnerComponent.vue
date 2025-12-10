@@ -1,18 +1,10 @@
 <template>
   <div class="spinner" v-show="loading">
     <!-- <div>Loading</div> -->
-    <span class="sync p-1 font-monospace" v-bind:style="[state.spinnerStyle, state.spinnerDelay1]"
-      >LO</span
-    >
-    <span class="sync p-1 font-monospace" v-bind:style="[state.spinnerStyle, state.spinnerDelay2]"
-      >AD</span
-    >
-    <span class="sync p-1 font-monospace" v-bind:style="[state.spinnerStyle, state.spinnerDelay3]"
-      >ING</span
-    >
-    <span class="sync p-1 font-monospace" v-bind:style="[state.spinnerStyle, state.spinnerDelay4]"
-      >...</span
-    >
+    <span class="sync p-1 font-monospace" v-bind:style="[state.spinnerStyle, state.spinnerDelay1]">LO</span>
+    <span class="sync p-1 font-monospace" v-bind:style="[state.spinnerStyle, state.spinnerDelay2]">AD</span>
+    <span class="sync p-1 font-monospace" v-bind:style="[state.spinnerStyle, state.spinnerDelay3]">ING</span>
+    <span class="sync p-1 font-monospace" v-bind:style="[state.spinnerStyle, state.spinnerDelay4]">...</span>
   </div>
 </template>
 <script setup lang="ts">
@@ -69,12 +61,6 @@ const state = reactive({
   },
   loadingLocal: props.loading
 })
-function start() {
-  state.loadingLocal = true
-}
-function end() {
-  state.loadingLocal = false
-}
 </script>
 <style>
 .spinner {
@@ -84,13 +70,16 @@ function end() {
   align-items: center;
   justify-content: center;
 }
+
 @keyframes spinerAnimation {
   33% {
     transform: translateY(10px);
   }
+
   66% {
     transform: translateY(-10px);
   }
+
   100% {
     transform: translateY(0);
   }

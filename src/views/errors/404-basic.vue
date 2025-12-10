@@ -1,6 +1,5 @@
-<script>
-export default {
-};
+<script setup lang="ts">
+const currentYear = new Date().getFullYear()
 </script>
 
 <template>
@@ -42,7 +41,7 @@ export default {
         <div class="row">
           <div class="col" lg="12">
             <div class="text-center">
-              <p class="mb-0 text-muted">&copy; {{ new Date().getFullYear() }} Arjuna V2 by IT Gawebecik</p>
+              <p class="mb-0 text-muted">&copy; {{ currentYear }} Arjuna V2 by IT Gawebecik</p>
             </div>
           </div>
         </div>

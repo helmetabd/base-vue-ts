@@ -1,53 +1,43 @@
-<script>
+<script setup lang="ts">
 import animationData from '@/components/widgets/rhvddzym.json'
-import apiClient from '../../service/ApiClientService'
-import BasicInput from '../../components/inputs/BasicInput.vue'
+import apiClient from '@/service/ApiClientService'
+import BasicInput from '@/components/inputs/BasicInput.vue'
 import Swal from 'sweetalert2'
-import router from '../../router'
+import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-export default {
-  components: {
-    BasicInput
-  },
-  data() {
-    return {
-      token: this.$route.query.token,
-      email: this.$route.query.email,
-      password: '',
-      password_confirmation: '',
-      processing: false,
-      defaultOptions: { animationData: animationData }
-    }
-  },
-  methods: {
-    async resetPassword() {
-      this.processing = true
-      let resetData = {
-        token: this.token,
-        email: this.email,
-        password: this.password,
-        password_confirmation: this.password_confirmation
-      }
-      apiClient
-        .post('/reset-password', resetData)
-        .then(() => {
-          Swal.fire({
-            title: 'Password Has Been Reset!',
-            text: 'You may allow to loggin with new credentail',
-            icon: 'success',
-            allowEscapeKey: false,
-            allowOutsideClick: false
-          }).then((e) => {
-            if (e.isConfirmed) router.push({ name: 'auth.login' })
-          })
-        })
-        .catch((e) => {
-          if (e.response) {
-            Swal.fire('Error', e.response?.data?.message, 'error')
-          }
-        })
-        .finally(() => (this.processing = false))
-    }
+const route = useRoute()
+const router = useRouter()
+
+const token = ref(route.query.token as string | undefined)
+const email = ref(route.query.email as string | undefined)
+const password = ref('')
+const password_confirmation = ref('')
+const processing = ref(false)
+const defaultOptions = { animationData }
+
+const resetPassword = async () => {
+  processing.value = true
+  const resetData = {
+    token: token.value,
+    email: email.value,
+    password: password.value,
+    password_confirmation: password_confirmation.value
+  }
+  try {
+    await apiClient.post('/reset-password', resetData)
+    const res = await Swal.fire({
+      title: 'Password Has Been Reset!',
+      text: 'You may allow to loggin with new credentail',
+      icon: 'success',
+      allowEscapeKey: false,
+      allowOutsideClick: false
+    })
+    if (res.isConfirmed) router.push({ name: 'auth.login' })
+  } catch (e: any) {
+    if (e.response) Swal.fire('Error', e.response?.data?.message, 'error')
+  } finally {
+    processing.value = false
   }
 }
 </script>
@@ -96,6 +86,7 @@ export default {
                 <div class="p-2">
                   <form @submit.prevent="resetPassword">
                     <BasicInput
+                      name="email"
                       type="email"
                       label="Email"
                       v-model="email"
@@ -103,6 +94,7 @@ export default {
                       disabled
                     />
                     <BasicInput
+                      name="password"
                       type="password"
                       label="Password"
                       v-model="password"
@@ -110,6 +102,7 @@ export default {
                       required
                     />
                     <BasicInput
+                      name="password_confirmation"
                       type="password"
                       label="Password Confirmation"
                       v-model="password_confirmation"

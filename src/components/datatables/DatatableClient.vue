@@ -1,13 +1,14 @@
-<script setup>
+<script setup lang="ts">
 import { getAvatar } from '@/utils/assetsHelper'
 import moment from 'moment'
 import Spinner from '../SpinnerComponent.vue'
 import StackedAvatar from '../utils/StackedAvatar.vue'
 import { reactive, computed, onMounted } from 'vue'
 import { ref } from 'vue'
-import thousandSeparator from '@/utils/thousandSeparator'
 import PercentageBadge from '../partials/percentage-badge.vue'
 import { calculateGrowth } from '@/utils/calculationHelper'
+import type { Column } from '@/interfaces/Utils'
+import { thousandSeparator } from '@/utils/dashboardHelper'
 
 const props = defineProps({
   table_search: {
@@ -74,10 +75,13 @@ const props = defineProps({
   paginationClass: {
     type: String
   }
-})
-const state = reactive({
+}) as any
+const emit = defineEmits<{
+  (e: 'openOffcanvas', payload: any): void
+}>()
+const state = reactive<any>({
   items: props.dataTable,
-  columns: props.column,
+  columns: props.column as Column[],
   groupHeader: props.headerGroup,
   filter: '',
   sortKey: props.sortBy,
@@ -86,38 +90,38 @@ const state = reactive({
   currentPage: 1,
   pageSizeOptions: [10, 25, 50, 100]
 })
-const isDataEmpty = ref(false)
-const loading = computed(() => {
+const isDataEmpty = ref<boolean>(false)
+const loading = computed<boolean>(() => {
   if (filteredItems.value.length === 0) {
     return true
   } else {
     return false
   }
 })
-const filteredItems = computed(() => {
+const filteredItems = computed<any[]>(() => {
   if (!state.filter) {
     return props.dataTable
   }
 
-  return props.dataTable.filter((item) => {
-    return Object.keys(item).some(
-      (name) =>
+  return props.dataTable.filter((item: any) => {
+    return Object.keys(item as any).some(
+      (name: string) =>
         isColumnFilterable(name) &&
         String(item[name]).toLowerCase().includes(state.filter.toLowerCase())
     )
   })
 })
-const sortedItems = computed(() => {
+const sortedItems = computed<any[]>(() => {
   const filterData = filteredItems.value
   const sortingKey = state.sortKey
   if (!sortingKey) {
     return filterData
   }
-  return filterData.slice().sort((a, b) => {
-    let aValue = a[sortingKey]
-    let bValue = b[sortingKey]
+  return filterData.slice().sort((a: any, b: any) => {
+    let aValue: any = a[sortingKey]
+    let bValue: any = b[sortingKey]
 
-    if (state.columns.some((column) => column.name === sortingKey && column.isNumber)) {
+    if (state.columns.some((column: any) => column.name === sortingKey && column.isNumber)) {
       aValue = parseFloat(aValue)
       bValue = parseFloat(bValue)
     }
@@ -125,25 +129,25 @@ const sortedItems = computed(() => {
     return aValue > bValue ? state.sortOrders : -state.sortOrders
   })
 })
-const totalPages = computed(() => {
+const totalPages = computed<number>(() => {
   return sortedItems.value.length ? Math.ceil(sortedItems.value.length / state.pageSize) : 1
 })
-const paginatedItems = computed(() => {
+const paginatedItems = computed<any[]>(() => {
   const start = (state.currentPage - 1) * state.pageSize
   const end = start + state.pageSize
   return sortedItems.value.length ? sortedItems.value.slice(start, end) : []
 })
-const pages = computed(() => {
-  const pagesArray = []
+const pages = computed<number[]>(() => {
+  const pagesArray: number[] = []
   for (let i = 1; i <= totalPages.value; i++) {
     pagesArray.push(i)
   }
   return pagesArray
 })
-const entriesRange = computed(() => {
-  let start = 0
-  let end = 0
-  let total = 0
+const entriesRange = computed<string>(() => {
+  let start: number = 0
+  let end: number = 0
+  let total: number = 0
   if (sortedItems.value.length) {
     start = (state.currentPage - 1) * state.pageSize + 1
     end = Math.min(state.currentPage * state.pageSize, filteredItems.value.length)
@@ -151,66 +155,68 @@ const entriesRange = computed(() => {
   }
   return `${start} to ${end} of ${total}`
 })
-const ellipsisPages = computed(() => {
-  const totalVisiblePages = 3
-  let range = []
-  let start, end
+const ellipsisPages = computed<{ start: number; end: number; range: Array<number | string> }>(
+  () => {
+    const totalVisiblePages = 3
+    const range: Array<number | string> = []
+    let start: number, end: number
 
-  if (totalPages.value <= totalVisiblePages) {
-    start = 1
-    end = totalPages.value
-  } else {
-    const pagesBeforeCurrent = 1
-    const pagesAfterCurrent = 1
-
-    if (state.currentPage <= pagesBeforeCurrent + 1) {
+    if (totalPages.value <= totalVisiblePages) {
       start = 1
-      end = totalVisiblePages
-    } else if (state.currentPage + pagesAfterCurrent >= totalPages.value) {
-      start = totalPages.value - totalVisiblePages + 1
       end = totalPages.value
     } else {
-      start = state.currentPage - pagesBeforeCurrent
-      end = state.currentPage + pagesAfterCurrent
+      const pagesBeforeCurrent = 1
+      const pagesAfterCurrent = 1
+
+      if (state.currentPage <= pagesBeforeCurrent + 1) {
+        start = 1
+        end = totalVisiblePages
+      } else if (state.currentPage + pagesAfterCurrent >= totalPages.value) {
+        start = totalPages.value - totalVisiblePages + 1
+        end = totalPages.value
+      } else {
+        start = state.currentPage - pagesBeforeCurrent
+        end = state.currentPage + pagesAfterCurrent
+      }
     }
-  }
 
-  if (start > 1) {
-    range.push(1)
-    if (start > 2) {
-      range.push('...')
+    if (start > 1) {
+      range.push(1)
+      if (start > 2) {
+        range.push('...')
+      }
     }
-  }
 
-  for (let i = start; i <= end; i++) {
-    range.push(i)
-  }
-
-  if (end < totalPages.value) {
-    if (end < totalPages.value - 1) {
-      range.push('...')
+    for (let i = start; i <= end; i++) {
+      range.push(i)
     }
-    range.push(totalPages.value)
-  }
 
-  return { start, end, range }
-})
-const avatar = (avatar) => getAvatar(avatar)
-const formatDate = (date, beforeFormat, afterFormat) => {
+    if (end < totalPages.value) {
+      if (end < totalPages.value - 1) {
+        range.push('...')
+      }
+      range.push(totalPages.value)
+    }
+
+    return { start, end, range }
+  }
+)
+const avatar = (avatar: string) => getAvatar(avatar)
+const formatDate = (date: string, beforeFormat: string, afterFormat: string) => {
   if (date) {
     return moment(date, beforeFormat).format(afterFormat)
     // return moment(date, "YYYY-MM-DD").format("DD MMM YYYY");
   }
   return ''
 }
-const toggleSorting = (column) => {
+const toggleSorting = (column: any) => {
   if (column.sortable) {
     state.sortKey = column.name
     state.sortOrders *= -1
   }
 }
-const isColumnFilterable = (key) => {
-  const column = state.columns.find((column) => column.name === key)
+const isColumnFilterable = (key: string) => {
+  const column = state.columns.find((column: any) => column.name === key)
   return column ? column.filterable : false
 }
 const prevPage = () => {
@@ -223,10 +229,10 @@ const nextPage = () => {
     state.currentPage++
   }
 }
-const goToPage = (pageNumber) => {
+const goToPage = (pageNumber: number) => {
   state.currentPage = pageNumber
 }
-const checkIcon = (column) => {
+const checkIcon = (column: any) => {
   if (column.sortable) {
     if (state.sortKey === column.name) {
       if (state.sortOrders === 1) {
@@ -241,10 +247,8 @@ const checkIcon = (column) => {
     return 'sorting_disabled'
   }
 }
-const getObjectValue = (obj, path, defaultValue) => {
-  // Check if the path contains a separator
+const getObjectValue = (obj: any, path: string, defaultValue?: any): any => {
   if (!path.includes('.')) {
-    // If no separator found, directly access the property
     return obj[path] !== undefined && obj[path] !== null
       ? obj[path]
       : defaultValue
@@ -275,43 +279,124 @@ const getObjectValue = (obj, path, defaultValue) => {
   // Return the final result
   return result !== undefined && result !== null ? result : defaultValue ? defaultValue : null
 }
-const formatObjectArray = (arr, obj) => {
-  return arr.map((item) => item[obj]).join(', ')
+const formatObjectArray = (arr: any[], obj: string): string => {
+  return arr.map((item: any) => item[obj]).join(', ')
 }
-function lightOrDark(color) {
+function lightOrDark(color: string): 'light' | 'dark' {
   // Check the format of the color, HEX or RGB?
-  let r, g, b, hsp
+  let r: number | string, g: number | string, b: number | string
   if (color.match(/^rgb/)) {
     // If HEX --> store the red, green, blue values in separate variables
-    color = color.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+(?:\.\d+)?))?\)$/);
-    r = color[1];
-    g = color[2];
-    b = color[3];
-  }
-  else {
+    const match = color.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+(?:\.\d+)?))?\)$/)
+    if (!match) return 'light'
+    r = Number(match[1])
+    g = Number(match[2])
+    b = Number(match[3])
+  } else {
     // If RGB --> Convert it to HEX: http://gist.github.com/983661
-    color = +("0x" + color.slice(1).replace(
-      color.length < 5 && /./g, '$&$&'
-    ));
-    r = color >> 16;
-    g = color >> 8 & 255;
-    b = color & 255;
+    const hex: number = +('0x' + color.slice(1).replace(color.length < 5 ? /./g : /./g, '$&$&'))
+    r = hex >> 16
+    g = (hex >> 8) & 255
+    b = hex & 255
   }
   // HSP equation from http://alienryderflex.com/hsp.html
-  hsp = Math.sqrt(
-    0.299 * (r * r) +
-    0.587 * (g * g) +
-    0.114 * (b * b)
-  );
+  const hsp = Math.sqrt(0.299 * (r * r) + 0.587 * (g * g) + 0.114 * (b * b))
   // Using the HSP value, determine whether the color is light or dark
   if (hsp > 127.5) {
-    return 'light';
-  }
-  else {
-    return 'dark';
+    return 'light'
+  } else {
+    return 'dark'
   }
 }
-const loadingState = ref(loading.value)
+function shouldHideDate(item: { [x: string]: any }, column: Column): boolean {
+  const config = column.dateConfig?.hideWhen;
+  if (!config) return true;
+
+  const left = getObjectValue(item, config.compare);
+  const right =
+    typeof config.with === "string" && item[config.with] !== undefined
+      ? getObjectValue(item, config.with)
+      : config.with;
+
+  switch (config.operator) {
+    case "==":
+      return left == right;
+    case "===":
+      return left === right;
+    case "!=":
+      return left != right;
+    case "!==":
+      return left !== right;
+    case "<":
+      return left < right;
+    case ">":
+      return left > right;
+    case "<=":
+      return left <= right;
+    case ">=":
+      return left >= right;
+    default:
+      return false; // fallback: no hide
+  }
+}
+const loadingState = ref<boolean>(loading.value)
+const tableData = ref<HTMLTableElement | null>(null)
+const copyInfo = ref<HTMLElement | null>(null)
+
+const copyToClipboard = async () => {
+  try {
+    await navigator.clipboard.writeText(JSON.stringify(paginatedItems.value))
+    if (copyInfo.value) {
+      copyInfo.value.style.display = 'block'
+      setTimeout(() => {
+        if (copyInfo.value) copyInfo.value.style.display = 'none'
+      }, 1500)
+    }
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+const exportToExcel = () => {
+  if (!paginatedItems.value.length) return
+  const cols: string[] = state.columns.map((c: any) => c.label)
+  const rows: string[] = paginatedItems.value.map((row: any) =>
+    state.columns
+      .map((c: any) => {
+        const v = getObjectValue(row, c.name)
+        return typeof v === 'string' ? '"' + v.replace(/"/g, '""') + '"' : v
+      })
+      .join(',')
+  )
+  const csv = [cols.join(','), ...rows].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', 'table.csv')
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+const printTable = () => {
+  const html = tableData.value ? tableData.value.outerHTML : ''
+  const w = window.open('', '', 'height=700,width=900')
+  if (!w) return
+  w.document.write('<html><head><title>Print</title>')
+  w.document.write('</head><body>')
+  w.document.write(html)
+  w.document.write('</body></html>')
+  w.document.close()
+  w.focus()
+  w.print()
+  w.close()
+}
+
+const openOffcanvas = (payload: any) => {
+  emit('openOffcanvas', payload)
+}
 onMounted(() => {
   if (loading.value) {
     setTimeout(() => {
@@ -361,7 +446,7 @@ onMounted(() => {
           <span>Print</span>
         </button>
       </div>
-      <div style="overflow-x: auto; overflow-y: hidden;">
+      <div style="overflow-x: auto; overflow-y: hidden;" class="px-0">
         <table ref="tableData" id="datatable"
           class="table table-hover table-bordered align-middle text-nowrap dt-responsive nowrap dataTable no-footer"
           :class="props.table_class" style="width: 100%" aria-describedby="datatable_info">
@@ -372,13 +457,19 @@ onMounted(() => {
               </th>
             </tr>
             <tr :class="props.headerRowClass">
-              <th v-for="(column, index) in state.columns" :key="index" @click="toggleSorting(column)" :style="'width:' +
-                column.width +
-                '; cursor:' +
-                (column.sortable ? ' pointer;' : ' default;')
-                " :class="checkIcon(column) + ' ' + column.headerClass" :hidden="column.hidden ?? false"
+              <th v-for="(column, index) in state.columns" :key="index"
+                @click="column.sortable ? toggleSorting(column.name) : null" :style="{
+                  width: column.width,
+                  cursor: column.sortable ? 'pointer' : 'default',
+                  ...column.style,
+                }" :class="checkIcon(column) + ' ' + column.headerClass" :hidden="column.hidden ?? false"
                 aria-controls="datatable">
-                {{ column.label }}
+                <template v-if="column.customizeHeader">
+                  <slot :name="`header-${column.name}`" :items="state.items"></slot>
+                </template>
+                <template v-else>
+                  {{ column.label }}
+                </template>
               </th>
             </tr>
           </thead>
@@ -387,8 +478,8 @@ onMounted(() => {
               ? props.customRow.class
               : ''
               ">
-              <td v-for="(column, columnIndex) in state.columns" :key="columnIndex"
-                :class="column.bold ? 'fw-semibold ' : 'fw-normal '" :hidden="column.hidden ?? false">
+              <td v-for="(column, columnIndex) in state.columns" :key="columnIndex" :class="(column.bold ? 'fw-semibold ' : 'fw-normal ') +
+                (column.class ?? '')" :hidden="column.hidden ?? false">
                 <template v-if="column.customizeRow">
                   <slot :name="`column-${column.name}`" :item="item" />
                 </template>
@@ -408,50 +499,57 @@ onMounted(() => {
                 </template>
                 <template v-else-if="column.percentage">
                   <div :class="column.class">
-                    <PercentageBadge :label="calculateGrowth(
+                    <PercentageBadge :label="Number(calculateGrowth(
                       getObjectValue(item, column.percentage.target),
                       getObjectValue(item, column.percentage.actual)
-                    ).result
-                      " :status="calculateGrowth(
-                        getObjectValue(item, column.percentage.target),
-                        getObjectValue(item, column.percentage.actual)
-                      ).success
-                        ">
+                    ).result)" :status="calculateGrowth(
+                      getObjectValue(item, column.percentage.target),
+                      getObjectValue(item, column.percentage.actual)
+                    ).success
+                      ">
                     </PercentageBadge>
                   </div>
                 </template>
                 <template v-else-if="column.custom">
-                  <div v-if="column.custom.routeName" :class="column.class">
-                    <span>
-                      <template v-if="
-                        column.custom.parent &&
-                        getObjectValue(item, column.custom.parent.data) !== null &&
-                        getObjectValue(item, column.custom.parent.params) !== getObjectValue(item, column.custom.params)
-                      ">
-                        <i :class="column.custom.parent.icon ?? column.custom.icon" :style="column.custom.parent.iconColorObject ? 'color: ' +
-                          getObjectValue(item, column.custom.parent.iconColorObject) +
-                          ';'
-                          : column.custom.parent.iconColor
-                            ? 'color: ' + column.custom.parent.iconColor + ';'
-                            : null
-                          "></i>
-                        <router-link :to="{
-                          name: column.custom.parent.routeName,
-                          params: {
-                            id: getObjectValue(item, column.custom.parent.params)
-                          }
-                        }">
-                          {{ getObjectValue(item, column.custom.parent.name) }}</router-link>
-                        <i class="las la-arrow-right ms-1 me-1 text-muted"></i>
-                      </template>
-                      <i v-if="column.custom.icon" :class="column.custom.icon" :style="column.custom.iconColorObject
-                        ? 'color: ' + getObjectValue(item, column.custom.iconColorObject) + ';'
-                        : column.custom.iconColor
-                          ? 'color: ' + column.custom.iconColor + ';'
-                          : null
-                        "></i>
-                      <img v-if="column.custom.image" :src="avatar(getObjectValue(item, column.custom.image))"
-                        class="rounded-circle avatar-xxs me-2" />
+                  <span v-if="
+                    column.custom.parent &&
+                    getObjectValue(item, column.custom.parent.data) !== null
+                  ">
+                    <i :class="column.custom.parent.icon ?? column.custom.icon" :style="{
+                      color: column.custom.parent.iconColorObject
+                        ? getObjectValue(
+                          item,
+                          column.custom.parent.iconColorObject
+                        )
+                        : (column.custom.parent.iconColor ?? null),
+                    }"></i>
+                    <router-link :to="{
+                      name: column.custom.parent.routeName,
+                      params: {
+                        id: getObjectValue(item, column.custom.parent.params),
+                      },
+                    }">
+                      {{ getObjectValue(item, column.custom.parent.name) }}
+                    </router-link>
+                    <i class="las la-arrow-right ms-1 me-1 text-muted"></i>
+                  </span>
+                  <i v-if="
+                    column.custom.icon &&
+                    getObjectValue(item, column.custom.display ?? column.name)
+                  " :class="column.custom.icon" :style="{
+                    color: column.custom.iconColorObject
+                      ? getObjectValue(item, column.custom.iconColorObject)
+                      : column.custom.iconColor,
+                  }"></i>
+                  <component v-if="column.custom.image" :is="column.custom.link ? 'a' : 'span'" :href="column.custom.link
+                    ? getObjectValue(item, column.custom.image)
+                    : undefined
+                    " target="_blank">
+                    <img :src="avatar(getObjectValue(item, column.custom.image))"
+                      class="rounded-circle avatar-xxs me-2" />
+                  </component>
+                  <template v-if="column.custom.routeName">
+                    <template v-if="Array.isArray(item[column.name])">
                       <template v-if="column.isFirst">
                         <router-link :to="{
                           name: column.custom.routeName,
@@ -460,142 +558,198 @@ onMounted(() => {
                           }
                         }">
                           {{
+                            getObjectValue(item[column.name][0], column.custom.display ??
+                              column.name)
+                          }}
+                        </router-link>
+                      </template>
+                      <span v-else v-for="(subItem, idx) in item[column.name]" :key="idx">
+                        <router-link :to="{
+                          name: column.custom.routeName,
+                          params: {
+                            id: getObjectValue(subItem, column.custom.params),
+                          },
+                        }">
+                          {{
                             getObjectValue(
-                              item[column.name][0],
+                              subItem,
                               column.custom.display ?? column.name
                             )
                           }}
                         </router-link>
-                      </template>
-                      <template v-else>
-                        <router-link v-if="getObjectValue(item, column.custom.display ?? column.name)" :to="{
-                          name: column.custom.routeName,
-                          params: column.custom.moreParams ? { ...column.custom.moreParams, id: getObjectValue(item, column.custom.params) } : {
-                            id: getObjectValue(item, column.custom.params)
-                          }
-                        }">
-                          {{ getObjectValue(item, column.custom.display ?? column.name) }}
-                          <i v-if="
-                            column.custom.uniqueFirst &&
-                            getObjectValue(item, column.custom.uniqueFirst.fields) ===
-                            column.custom.uniqueFirst.value
-                          " :class="column.custom.uniqueFirst.icon"></i>
-                          <template v-if="column.custom.uniqueIcon">
-                            <slot :name="`column-${column.name}-unique`" :item="item" />
-                          </template>
-                        </router-link>
-                      </template>
-                    </span>
-                  </div>
-                  <template v-else-if="column.custom.image">
-                    <img v-if="column.custom.image" :src="avatar(getObjectValue(item, column.custom.image))"
-                      class="rounded-circle avatar-xxs me-2" />
-                    {{ getObjectValue(item, column.name) }}
-                    <i v-if="
-                      column.custom.uniqueFirst &&
-                      getObjectValue(item, column.custom.uniqueFirst.fields) ===
-                      column.custom.uniqueFirst.value
-                    " :class="column.custom.uniqueFirst.icon"></i>
-                    <template v-if="column.custom.uniqueIcon">
-                      <slot :name="`column-${column.name}-unique`" :item="item" />
+                        <span v-if="idx < item[column.name].length - 1">,
+                        </span>
+                      </span>
+                    </template>
+                    <template v-else>
+                      <router-link v-if="getObjectValue(item, column.name)" :to="{
+                        name: column.custom.routeName,
+                        params: {
+                          id: getObjectValue(item, column.custom.params),
+                        },
+                      }">
+                        {{
+                          getObjectValue(
+                            item,
+                            column.custom.display ?? column.name, column.custom.defaultValue
+                          )
+                        }}
+                      </router-link>
+                      <span v-else>
+                        {{ column.custom.defaultValue ?? '-' }}
+                      </span>
                     </template>
                   </template>
-                  <div v-else :class="column.class">
-                    <span>
-                      <i :class="column.custom.icon"></i>
-                      {{ item[column.name] }}
-                    </span>
-                  </div>
+                  <template v-else>
+                    <component :is="column.custom.link ? 'a' : 'span'" :href="column.custom.link
+                      ? getObjectValue(item, column.custom.display ?? column.name).includes('http')
+                        ? getObjectValue(item, column.custom.display ?? column.name)
+                        : 'https://' +
+                        getObjectValue(item, column.custom.display ?? column.name)
+                      : undefined
+                      " target="_blank" v-if="
+                        getObjectValue(
+                          item,
+                          column.custom.display ?? column.name
+                        )">
+                      {{
+                        getObjectValue(
+                          item,
+                          column.custom.display ?? column.name
+                        )
+                      }}
+                    </component>
+                  </template>
+                  <i v-if="
+                    column.custom.uniqueFirst &&
+                    getObjectValue(item, column.custom.uniqueFirst.fields) ===
+                    column.custom.uniqueFirst.value
+                  " :class="column.custom.uniqueFirst.icon"></i>
+                  <slot v-if="column.custom.uniqueIcon" :name="`column-${column.name}-unique`" :item="item" />
                 </template>
                 <template v-else-if="column.badge">
-                  <template v-if="column.badge.types">
-                    <div v-if="column.badge.isArray">
-                      <div v-for="(array, indexA) in item[column.name]" :key="indexA">
-                        <div v-for="(model, indexB) in column.badge.types" :key="indexB">
-                          <div v-if="model.value === getObjectValue(array, column.badge.display)">
+                  <div v-if="
+                    column.badge.default &&
+                    column.badge.default.value ==
+                    getObjectValue(
+                      item,
+                      column.badge.default.name ?? column.name
+                    )
+                  " :class="column.badge.default.class">
+                    <strong>{{ column.badge.default.text }}</strong>
+                  </div>
+                  <template v-else>
+                    <template v-if="column.badge.types">
+                      <template v-if="Array.isArray(item[column.name])">
+                        <template v-for="(array, indexA) in item[column.name]" :key="indexA">
+                          <template v-for="(model, indexB) in column.badge.types" :key="indexB">
+                            <div v-if="
+                              model.value ===
+                              getObjectValue(array, column.badge.display)
+                            ">
+                              <span v-if="column.badge.custom" class="badge" :class="'text-' + model.textColor"
+                                :style="{ 'background-color': model.color }">
+                                {{
+                                  model.label ??
+                                  getObjectValue(array, column.badge.display)
+                                }}
+                              </span>
+                              <span v-else class="badge"
+                                :class="'bg-' + model.type + '-subtle text-' + model.type + ' p-2'">
+                                {{ model.label ?? getObjectValue(array,
+                                  column.badge.display) }}
+                              </span>
+                            </div>
+                          </template>
+                        </template>
+                      </template>
+                      <template v-else>
+                        <template v-for="(model, indexA) in column.badge.types" :key="indexA">
+                          <template v-if="model.value === getObjectValue(item, column.display ?? column.name)">
                             <span v-if="column.badge.custom" :class="'badge text-' + model.textColor"
-                              :style="'background-color: ' + model.color + ';'">{{
-                                model.label
-                                  ? model.label
-                                  : getObjectValue(array, column.badge.display)
-                              }}</span>
-                            <span v-else :class="'badge bg-' + model.type + '-subtle text-' + model.type + ' p-2'
-                              ">{{
-                                model.label
-                                  ? model.label
-                                  : getObjectValue(array, column.badge.display)
-                              }}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <template v-else>
-                      <template v-for="(model, indexA) in column.badge.types" :key="indexA">
-                        <template v-if="model.value === getObjectValue(item, column.name)">
-                          <span v-if="column.badge.custom" :class="'badge text-' + model.textColor"
-                            :style="'background-color: ' + model.color + ';'">
-                            {{ model.label ? model.label : getObjectValue(item, column.name) }}
-                          </span>
-                          <span v-else :class="'badge bg-' + model.type + '-subtle text-' + model.type + ' p-2'
-                            ">{{
-                              model.label ? model.label : getObjectValue(item, column.name)
-                            }}</span>
+                              :style="'background-color: ' + model.color + ';'">
+                              {{ model.label ?? getObjectValue(item, column.display ??
+                                column.name) }}
+                            </span>
+                            <span v-else class="badge"
+                              :class="'bg-' + model.type + '-subtle text-' + model.type + ' p-2'">
+                              {{ model.label ?? getObjectValue(item, column.display ??
+                                column.name) }}
+                            </span>
+                          </template>
                         </template>
                       </template>
                     </template>
-                  </template>
-                  <div v-else id="Badge">
-                    <div v-if="column.badge.isArray">
-                      <template v-for="(array, indexA) in item[column.name]" :key="indexA">
-                        <span v-if="column.badge.custom" :class="'badge text-' + column.badge.textColor" :style="'background-color: ' + getObjectValue(array, column.badge.color) + ';'
-                          ">{{ getObjectValue(array, column.badge.display) }}</span>
+                    <template v-else>
+                      <div v-if="Array.isArray(item[column.name])">
+                        <template v-for="(array, indexA) in item[column.name]" :key="indexA">
+                          <span v-if="column.badge.custom" :class="'badge text-' + column.badge.textColor" :style="{
+                            'background-color': getObjectValue(
+                              array,
+                              column.badge.color
+                            ),
+                          }">
+                            {{ getObjectValue(array, column.badge.display) }}
+                          </span>
+                          <span v-else :class="'badge bg-' +
+                            column.badge.type +
+                            '-subtle text-' +
+                            column.badge.type +
+                            ' p-2 me-1'
+                            ">{{ getObjectValue(array, column.badge.display) }}
+                          </span>
+                        </template>
+                      </div>
+                      <div v-else>
+                        <span v-if="column.badge.custom" :class="'badge text-' + column.badge.textColor" :style="{
+                          'background-color': getObjectValue(
+                            item,
+                            column.badge.color
+                          ),
+                        }">
+                          {{ getObjectValue(item, column.name) }}
+                        </span>
                         <span v-else :class="'badge bg-' +
                           column.badge.type +
                           '-subtle text-' +
                           column.badge.type +
                           ' p-2'
-                          ">{{ getObjectValue(array, column.badge.display) }}</span>
-                      </template>
-                    </div>
-                    <div v-else>
-                      <span v-if="column.badge.custom" :class="'badge text-' + column.badge.textColor" :style="'background-color: ' + getObjectValue(item, column.badge.color) + ';'
-                        ">{{ getObjectValue(item, column.name) }}</span>
-                      <span v-else :class="'badge bg-' +
-                        column.badge.type +
-                        '-subtle text-' +
-                        column.badge.type +
-                        ' p-2'
-                        ">{{ getObjectValue(item, column.name) }}</span>
-                    </div>
-                  </div>
+                          ">{{ getObjectValue(item, column.name) }}</span>
+                      </div>
+                    </template>
+                  </template>
                 </template>
                 <template v-else-if="column.dateConfig">
-                  <router-link v-if="column.routeName" :to="{
-                    name: column.routeName,
-                    params: {
-                      id: getObjectValue(item, column.params.id)
-                    },
-                    query: {
-                      date: getObjectValue(item, column.params.date)
-                    }
-                  }">
-                    {{
-                      formatDate(
-                        item[column.name],
-                        column.dateConfig.before,
-                        column.dateConfig.after
-                      )
-                    }}
-                  </router-link>
-                  <template v-else>
-                    {{
-                      formatDate(
-                        item[column.name],
-                        column.dateConfig.before,
-                        column.dateConfig.after
-                      )
-                    }}
+                  <template v-if="shouldHideDate(item, column)">
+                    <i class="ri-time-line me-1 text-muted" v-if="column.dateConfig.icon"></i>
+                    <router-link v-if="column.routeName && column.params" :to="{
+                      name: column.routeName,
+                      params: {
+                        id: getObjectValue(item, column.params.id),
+                      },
+                      query: {
+                        date: getObjectValue(item, column.params.date),
+                      },
+                    }">
+                      {{
+                        formatDate(
+                          item[column.name],
+                          column.dateConfig.before,
+                          column.dateConfig.after
+                        )
+                      }}
+                    </router-link>
+                    <template v-else>
+                      {{
+                        formatDate(
+                          getObjectValue(item, column.display ?? column.name),
+                          column.dateConfig.before,
+                          column.dateConfig.after
+                        )
+                      }}
+                    </template>
                   </template>
+                  <template v-else>-</template>
                 </template>
                 <template v-else-if="column.offcanvas">
                   <button class="btn btn-light btn-sm" type="button" data-bs-toggle="offcanvas"
@@ -616,7 +770,12 @@ onMounted(() => {
                     {{ getObjectValue(item[column.name][0], column.display) }}
                   </template>
                   <template v-else-if="column.isLast">
-                    {{ getObjectValue(item[column.name][array.length - 1], column.display) }}
+                    {{
+                      getObjectValue(
+                        item[column.name][item[column.name].length - 1],
+                        column.display
+                      )
+                    }}
                   </template>
                   <template v-else>
                     <template>
@@ -629,14 +788,46 @@ onMounted(() => {
                 </template>
                 <template v-else-if="column.color">
                   <div :style="{ backgroundColor: getObjectValue(item, column.name) }" class="p-1 rounded-2">
-                    <span
-                      :class="lightOrDark(getObjectValue(item, column.name)) == 'light' ? 'text-dark' : 'text-light'">
+                    <span :class="lightOrDark(getObjectValue(item, column.name)) == 'light'
+                      ? 'text-dark'
+                      : 'text-light'
+                      ">
                       {{ getObjectValue(item, column.name) }}
                     </span>
                   </div>
                 </template>
+                <template v-else-if="column.checkable">
+                  <span class="text-success fw-semibold" v-if="
+                    getObjectValue(item, column.name) !== null &&
+                    getObjectValue(item, column.name) !== 0
+                  ">Ok</span>
+                  <span v-else>-</span>
+                </template>
+                <template v-else-if="column.textTypes">
+                  <template v-for="(model, indexA) in column.textTypes.types" :key="indexA">
+                    <template v-if="model.value === getObjectValue(item, column.name)">
+                      <span :class="'fw-semibold text-' + model.type">{{
+                        model.label ?? getObjectValue(item, column.display ?? column.name)
+                        }}</span>
+                    </template>
+                  </template>
+                </template>
+                <template v-else-if="column.truncate">
+                  <a v-if="column.link" :href="String(
+                    getObjectValue(item, column.display ?? column.name)
+                  ).includes('http')
+                    ? getObjectValue(item, column.display ?? column.name)
+                    : 'https://' +
+                    getObjectValue(item, column.display ?? column.name)
+                    " class="truncate-class text-truncate" target="_blank">
+                    {{ getObjectValue(item, column.display ?? column.name) }}
+                  </a>
+                  <span v-else class="truncate-class text-truncate">
+                    {{ getObjectValue(item, column.display ?? column.name) }}
+                  </span>
+                </template>
                 <template v-else>
-                  {{ getObjectValue(item, column.name) }}
+                  {{ getObjectValue(item, column.display ?? column.name) }}
                 </template>
               </td>
             </tr>
@@ -671,8 +862,8 @@ onMounted(() => {
               </button>
             </li>
             <template v-if="totalPages <= 10">
-              <li class="paginate_button page-item" v-for="pageNumber in pages" :key="pageNumber">
-                <button @click="goToPage(pageNumber)" class="page-link" data-dt-idx="2" tabindex="0"
+              <li class="paginate_button page-item" v-for="pageNumber in pages" :key="pageNumber as number">
+                <button @click="goToPage(pageNumber as number)" class="page-link" data-dt-idx="2" tabindex="0"
                   :class="{ active: pageNumber === state.currentPage }" :style="'cursor:' + (pageNumber === state.currentPage ? ' default;' : ' pointer;')
                     ">
                   {{ pageNumber }}
@@ -680,9 +871,9 @@ onMounted(() => {
               </li>
             </template>
             <template v-else>
-              <template v-for="pageNumber in ellipsisPages.range" :key="pageNumber">
+              <template v-for="pageNumber in ellipsisPages.range" :key="String(pageNumber)">
                 <li class="paginate_button page-item" v-if="pageNumber !== '...'">
-                  <button @click="goToPage(pageNumber)" class="page-link" data-dt-idx="2" tabindex="0"
+                  <button @click="goToPage(pageNumber as number)" class="page-link" data-dt-idx="2" tabindex="0"
                     :class="{ active: pageNumber === state.currentPage }" :style="'cursor:' + (pageNumber === state.currentPage ? ' default;' : ' pointer;')
                       ">
                     {{ pageNumber }}
