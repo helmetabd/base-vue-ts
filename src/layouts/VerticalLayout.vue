@@ -154,6 +154,6 @@ onUnmounted(() => {
       </div>
       <PageFooter />
     </div>
-    <RightBar hidden />
+    <RightBar />
   </div>
 </template>
